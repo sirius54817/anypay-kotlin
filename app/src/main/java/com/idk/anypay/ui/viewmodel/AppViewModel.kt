@@ -238,7 +238,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun openAccessibilitySettings() {
         upiService.openAccessibilitySettings()
     }
-    
+
+    fun openAppInfo() {
+        upiService.openAppInfo()
+    }
+
+    fun requiresRestrictedSettingsStep(): Boolean = upiService.requiresRestrictedSettingsStep()
+
     /**
      * Check if overlay permission is granted
      */

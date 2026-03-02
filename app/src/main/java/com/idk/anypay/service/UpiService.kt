@@ -105,7 +105,26 @@ class UpiService(private val context: Context) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
-    
+
+    /**
+     * Open App Info screen so user can tap ⋮ → "Allow restricted settings"
+     * (required on Android 13+ before an Accessibility Service can be enabled
+     *  for sideloaded / ADB-installed apps).
+     */
+    fun openAppInfo() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    }
+
+    /**
+     * Returns true when running on Android 13+ where restricted settings apply
+     * to apps not installed from the Play Store.
+     */
+    fun requiresRestrictedSettingsStep(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
     /**
      * Check balance using USSD *99#
      */

@@ -30,11 +30,13 @@ fun HomeScreen(
     hasPhonePermission: Boolean,
     isAccessibilityEnabled: Boolean,
     hasOverlayPermission: Boolean = true,
+    requiresRestrictedSettings: Boolean = false,
     onSendMoney: () -> Unit,
     onCheckBalance: () -> Unit,
     onViewHistory: () -> Unit,
     onRequestPermissions: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
+    onOpenAppInfo: () -> Unit = {},
     onRequestOverlayPermission: () -> Unit = {}
 ) {
     LazyColumn(
@@ -51,8 +53,10 @@ fun HomeScreen(
                     hasPhonePermission = hasPhonePermission,
                     isAccessibilityEnabled = isAccessibilityEnabled,
                     hasOverlayPermission = hasOverlayPermission,
+                    requiresRestrictedSettings = requiresRestrictedSettings,
                     onRequestPermissions = onRequestPermissions,
                     onOpenAccessibilitySettings = onOpenAccessibilitySettings,
+                    onOpenAppInfo = onOpenAppInfo,
                     onRequestOverlayPermission = onRequestOverlayPermission
                 )
             }
@@ -138,8 +142,10 @@ private fun ServiceStatusCard(
     hasPhonePermission: Boolean,
     isAccessibilityEnabled: Boolean,
     hasOverlayPermission: Boolean,
+    requiresRestrictedSettings: Boolean,
     onRequestPermissions: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
+    onOpenAppInfo: () -> Unit,
     onRequestOverlayPermission: () -> Unit
 ) {
     val borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
@@ -166,18 +172,122 @@ private fun ServiceStatusCard(
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
         }
+
         if (!hasPhonePermission) PermissionRow(
             label = "Phone Permission",
             subtitle = "Required for USSD calls",
             actionLabel = "Grant",
             onClick = onRequestPermissions
         )
-        if (!isAccessibilityEnabled) PermissionRow(
-            label = "Accessibility Service",
-            subtitle = "Required for USSD automation",
-            actionLabel = "Enable",
-            onClick = onOpenAccessibilitySettings
-        )
+
+        // Accessibility – show two-step guide on Android 13+
+        if (!isAccessibilityEnabled) {
+            if (requiresRestrictedSettings) {
+                // Step 1 – App Info → Allow restricted settings
+                HorizontalDivider(color = MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Accessibility Service — 2 steps needed",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    // Step 1
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(MaterialTheme.colorScheme.error),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("1", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onError)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Allow Restricted Settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = "App Info → ⋮ menu → Allow restricted settings",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = onOpenAppInfo,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Open", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    // Step 2
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("2", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onError)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Enable Accessibility Service",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = "Accessibility → Installed services → AnyPay",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = onOpenAccessibilitySettings,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Enable", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            } else {
+                PermissionRow(
+                    label = "Accessibility Service",
+                    subtitle = "Required for USSD automation",
+                    actionLabel = "Enable",
+                    onClick = onOpenAccessibilitySettings
+                )
+            }
+        }
+
         if (!hasOverlayPermission) PermissionRow(
             label = "Overlay Permission",
             subtitle = "For seamless USSD experience",
@@ -543,11 +653,34 @@ private fun HomeScreenPermissionMissingPreview() {
             hasPhonePermission = false,
             isAccessibilityEnabled = false,
             hasOverlayPermission = false,
+            requiresRestrictedSettings = false,
             onSendMoney = {},
             onCheckBalance = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
+            onRequestOverlayPermission = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home – Restricted Settings needed (Android 13+)")
+@Composable
+private fun HomeScreenRestrictedSettingsPreview() {
+    AnyPayTheme(darkTheme = false) {
+        HomeScreen(
+            recentTransactions = emptyList(),
+            lastBalance = 0.0,
+            hasPhonePermission = true,
+            isAccessibilityEnabled = false,
+            hasOverlayPermission = true,
+            requiresRestrictedSettings = true,
+            onSendMoney = {},
+            onCheckBalance = {},
+            onViewHistory = {},
+            onRequestPermissions = {},
+            onOpenAccessibilitySettings = {},
+            onOpenAppInfo = {},
             onRequestOverlayPermission = {}
         )
     }

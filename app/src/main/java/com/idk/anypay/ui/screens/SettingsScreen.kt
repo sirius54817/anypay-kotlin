@@ -30,7 +30,9 @@ fun SettingsScreen(
     credentials: UserCredentials?,
     onUpdatePin: (String) -> Unit,
     onClearData: () -> Unit,
-    onOpenAccessibilitySettings: () -> Unit
+    onOpenAccessibilitySettings: () -> Unit,
+    onOpenAppInfo: () -> Unit = {},
+    requiresRestrictedSettings: Boolean = false
 ) {
     var showChangePinDialog by remember { mutableStateOf(false) }
     var showClearDataDialog  by remember { mutableStateOf(false) }
@@ -72,7 +74,7 @@ fun SettingsScreen(
             }
         }
 
-        // ── Security ──────────────────────────────────────────────────────
+        // ── Security ──────────────────────────────────────────────────
         SettingsSection(title = "Security") {
             SettingsItem(
                 icon     = Icons.Default.Lock,
@@ -81,12 +83,126 @@ fun SettingsScreen(
                 onClick  = { showChangePinDialog = true }
             )
             SettingsDivider()
-            SettingsItem(
-                icon     = Icons.Default.Accessibility,
-                title    = "Accessibility Service",
-                subtitle = "Enable for USSD automation",
-                onClick  = onOpenAccessibilitySettings
-            )
+            if (requiresRestrictedSettings) {
+                // Show two-step guide for Android 13+
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Accessibility,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(14.dp))
+                        Column {
+                            Text(
+                                text = "Accessibility Service",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Enable for USSD automation — requires 2 steps",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    // Step 1
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("1", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Allow Restricted Settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "App Info → ⋮ menu → Allow restricted settings",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = onOpenAppInfo,
+                            shape = MaterialTheme.shapes.small,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Open", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    // Step 2
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(MaterialTheme.colorScheme.outline),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("2", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Enable Accessibility Service",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Accessibility → Installed services → AnyPay",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = onOpenAccessibilitySettings,
+                            shape = MaterialTheme.shapes.small,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Enable", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            } else {
+                SettingsItem(
+                    icon     = Icons.Default.Accessibility,
+                    title    = "Accessibility Service",
+                    subtitle = "Enable for USSD automation",
+                    onClick  = onOpenAccessibilitySettings
+                )
+            }
         }
 
         // ── Data ──────────────────────────────────────────────────────────
@@ -345,6 +461,29 @@ private fun SettingsScreenDarkPreview() {
                 isSetupComplete = true
             ),
             onUpdatePin = {}, onClearData = {}, onOpenAccessibilitySettings = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Settings – Restricted Settings (Android 13+)")
+@Composable
+private fun SettingsScreenRestrictedPreview() {
+    AnyPayTheme(darkTheme = false) {
+        SettingsScreen(
+            credentials = UserCredentials(
+                mobileNumber    = "9876543210",
+                upiPin          = "1234",
+                bankName        = "State Bank of India",
+                bankIfsc        = "SBIN0001234",
+                cardLastSixDigits = "123456",
+                cardExpiryMonth = "01",
+                cardExpiryYear  = "28",
+                isSetupComplete = true
+            ),
+            onUpdatePin = {}, onClearData = {},
+            onOpenAccessibilitySettings = {},
+            onOpenAppInfo = {},
+            requiresRestrictedSettings = true
         )
     }
 }

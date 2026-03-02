@@ -153,6 +153,10 @@ private fun AppContent(
                 onOpenAccessibilitySettings = {
                     viewModel.openAccessibilitySettings()
                 },
+                onOpenAppInfo = {
+                    viewModel.openAppInfo()
+                },
+                requiresRestrictedSettings = viewModel.requiresRestrictedSettingsStep(),
                 onRequestOverlayPermission = {
                     viewModel.requestOverlayPermission()
                 },

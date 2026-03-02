@@ -56,6 +56,8 @@ fun MainNavigation(
     onRequestPhonePermissions: () -> Unit,
     onRequestCameraPermission: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
+    onOpenAppInfo: () -> Unit = {},
+    requiresRestrictedSettings: Boolean = false,
     onRequestOverlayPermission: () -> Unit = {},
     onUpdateTransaction: (Transaction) -> Unit = {}
 ) {
@@ -125,7 +127,8 @@ fun MainNavigation(
                     hasPhonePermission = hasPhonePermission,
                     hasOverlayPermission = hasOverlayPermission,
                     isAccessibilityEnabled = isAccessibilityEnabled,
-                    onSendMoney = { 
+                    requiresRestrictedSettings = requiresRestrictedSettings,
+                    onSendMoney = {
                         pendingRecipient = ""
                         pendingAmount = ""
                         pendingRemarks = ""
@@ -149,6 +152,7 @@ fun MainNavigation(
                     },
                     onRequestPermissions = onRequestPhonePermissions,
                     onOpenAccessibilitySettings = onOpenAccessibilitySettings,
+                    onOpenAppInfo = onOpenAppInfo,
                     onRequestOverlayPermission = onRequestOverlayPermission
                 )
             }
@@ -167,7 +171,9 @@ fun MainNavigation(
                     credentials = credentials,
                     onUpdatePin = onUpdatePin,
                     onClearData = onClearData,
-                    onOpenAccessibilitySettings = onOpenAccessibilitySettings
+                    onOpenAccessibilitySettings = onOpenAccessibilitySettings,
+                    onOpenAppInfo = onOpenAppInfo,
+                    requiresRestrictedSettings = requiresRestrictedSettings
                 )
             }
             
