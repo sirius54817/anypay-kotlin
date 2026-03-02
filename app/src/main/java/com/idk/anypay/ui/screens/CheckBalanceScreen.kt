@@ -1,5 +1,8 @@
 package com.idk.anypay.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -7,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.service.UpiService
@@ -25,148 +29,137 @@ fun CheckBalanceScreen(
     onUpdateTransaction: ((com.idk.anypay.data.model.Transaction) -> Unit)? = null
 ) {
     val isProcessing = operationState is UpiService.OperationState.InProgress
-    val isComplete = operationState is UpiService.OperationState.Success || 
-                     operationState is UpiService.OperationState.Error
-    
-    // Track if we've already updated the transaction to prevent re-triggering
+    val isComplete   = operationState is UpiService.OperationState.Success ||
+                       operationState is UpiService.OperationState.Error
+
     var hasUpdatedTransaction by remember { mutableStateOf(false) }
-    
-    // Update transaction when operation completes (only once)
+
     LaunchedEffect(isComplete) {
         if (isComplete && !hasUpdatedTransaction) {
             if (operationState is UpiService.OperationState.Success) {
-                operationState.transaction?.let { 
+                operationState.transaction?.let {
                     onUpdateTransaction?.invoke(it)
                     hasUpdatedTransaction = true
                 }
             }
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Check Balance") },
+                title = { Text("Check Balance", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack, enabled = !isProcessing) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor             = MaterialTheme.colorScheme.background,
+                    titleContentColor          = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
     ) { padding ->
         when {
-            isComplete -> {
-                BalanceResultScreen(
-                    operationState = operationState,
-                    onDone = {
-                        onReset()
-                        onBack()
-                    }
-                )
-            }
-            isProcessing -> {
-                ProcessingScreen(
-                    message = (operationState as? UpiService.OperationState.InProgress)?.message ?: "Processing...",
-                    lastUssdMessage = lastUssdMessage,
-                    onCancel = onCancel,
-                    modifier = Modifier.padding(padding)
-                )
-            }
+            isComplete -> BalanceResultScreen(
+                operationState = operationState,
+                onDone = { onReset(); onBack() }
+            )
+            isProcessing -> ProcessingScreen(
+                message         = (operationState as? UpiService.OperationState.InProgress)?.message ?: "Processing...",
+                lastUssdMessage = lastUssdMessage,
+                onCancel        = onCancel,
+                modifier        = Modifier.padding(padding)
+            )
             else -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(padding)
-                        .padding(24.dp),
+                        .padding(horizontal = 16.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Last known balance
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+                    // ── Last known balance ────────────────────────────────────
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.medium)
+                            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Last Known Balance",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        Text(
+                            text = "Last Known Balance",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = "₹${String.format("%,.2f", lastBalance)}",
+                            style = MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    // ── How it works ──────────────────────────────────────────
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.medium)
+                            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(16.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
                             )
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
+                            Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "₹${String.format("%,.2f", lastBalance)}",
-                                style = MaterialTheme.typography.displaySmall,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                text = "How it works",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = "• Dials *99# USSD code\n" +
+                                   "• Selects balance enquiry option\n" +
+                                   "• You enter your UPI PIN when prompted\n" +
+                                   "• Balance will be displayed and saved",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    // Info card
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "How it works",
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            Text(
-                                text = "• This will dial *99# USSD code\n" +
-                                       "• Select balance enquiry option\n" +
-                                       "• Enter your UPI PIN when prompted\n" +
-                                       "• Balance will be displayed and saved",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
+
+                    Spacer(Modifier.height(28.dp))
+
                     Button(
-                        onClick = onCheckBalance,
-                        modifier = Modifier.fillMaxWidth()
+                        onClick  = onCheckBalance,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape    = MaterialTheme.shapes.small,
+                        colors   = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor   = MaterialTheme.colorScheme.onPrimary
+                        )
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
                         Text("Check Balance Now")
                     }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
+
+                    Spacer(Modifier.height(12.dp))
+
                     Text(
                         text = "Balance check is free and does not cost any money",
                         style = MaterialTheme.typography.bodySmall,
@@ -178,53 +171,52 @@ fun CheckBalanceScreen(
     }
 }
 
+// ─── Balance Result ───────────────────────────────────────────────────────────
+
 @Composable
 private fun BalanceResultScreen(
     operationState: UpiService.OperationState,
     onDone: () -> Unit
 ) {
-    val isSuccess = operationState is UpiService.OperationState.Success
-    val balance = remember(operationState) {
+    val isSuccess   = operationState is UpiService.OperationState.Success
+    val balance     = remember(operationState) {
         (operationState as? UpiService.OperationState.Success)?.transaction?.balance
     }
-    
+    val accentColor = if (isSuccess) SuccessGreen else ErrorRed
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = if (isSuccess) SuccessGreen.copy(alpha = 0.1f) else ErrorRed.copy(alpha = 0.1f),
-            modifier = Modifier.size(100.dp)
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(MaterialTheme.shapes.large)
+                .background(accentColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error,
-                    contentDescription = null,
-                    tint = if (isSuccess) SuccessGreen else ErrorRed,
-                    modifier = Modifier.size(56.dp)
-                )
-            }
+            Icon(
+                if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(44.dp)
+            )
         }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
+
+        Spacer(Modifier.height(20.dp))
+
         if (isSuccess) {
             if (balance != null) {
                 Text(
                     text = "Your Balance",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = "₹${String.format("%,.2f", balance)}",
                     style = MaterialTheme.typography.displayMedium,
@@ -233,11 +225,10 @@ private fun BalanceResultScreen(
             } else {
                 Text(
                     text = "Balance Check Complete",
-                    style = MaterialTheme.typography.headlineSmall
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = "Please check your SMS for balance details",
                     style = MaterialTheme.typography.bodyMedium,
@@ -247,43 +238,53 @@ private fun BalanceResultScreen(
         } else {
             Text(
                 text = "Failed to Check Balance",
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = "Please try again later",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
+
+        Spacer(Modifier.height(32.dp))
+
         Button(
-            onClick = onDone,
-            modifier = Modifier.fillMaxWidth()
+            onClick  = onDone,
+            modifier = Modifier.fillMaxWidth(),
+            shape    = MaterialTheme.shapes.small
         ) {
             Text("Done")
         }
     }
 }
 
-// ─── Previews ────────────────────────────────────────────────────────────────
+// ─── Previews ─────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true, name = "Check Balance – Idle")
+@Preview(showBackground = true, name = "Check Balance – Light Idle")
 @Composable
 private fun CheckBalanceIdlePreview() {
-    MaterialTheme {
+    AnyPayTheme(darkTheme = false) {
         CheckBalanceScreen(
             operationState = UpiService.OperationState.Idle,
             lastUssdMessage = null,
             lastBalance = 12345.67,
-            onCheckBalance = {},
-            onCancel = {},
-            onBack = {},
-            onReset = {}
+            onCheckBalance = {}, onCancel = {}, onBack = {}, onReset = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Check Balance – Dark Idle")
+@Composable
+private fun CheckBalanceIdleDarkPreview() {
+    AnyPayTheme(darkTheme = true) {
+        CheckBalanceScreen(
+            operationState = UpiService.OperationState.Idle,
+            lastUssdMessage = null,
+            lastBalance = 12345.67,
+            onCheckBalance = {}, onCancel = {}, onBack = {}, onReset = {}
         )
     }
 }
@@ -291,15 +292,12 @@ private fun CheckBalanceIdlePreview() {
 @Preview(showBackground = true, name = "Check Balance – Processing")
 @Composable
 private fun CheckBalanceProcessingPreview() {
-    MaterialTheme {
+    AnyPayTheme(darkTheme = false) {
         CheckBalanceScreen(
-            operationState = UpiService.OperationState.InProgress("Sending USSD request..."),
+            operationState  = UpiService.OperationState.InProgress("Sending USSD request..."),
             lastUssdMessage = "Please wait while we check your balance",
-            lastBalance = 12345.67,
-            onCheckBalance = {},
-            onCancel = {},
-            onBack = {},
-            onReset = {}
+            lastBalance     = 12345.67,
+            onCheckBalance  = {}, onCancel = {}, onBack = {}, onReset = {}
         )
     }
 }
@@ -307,24 +305,20 @@ private fun CheckBalanceProcessingPreview() {
 @Preview(showBackground = true, name = "Check Balance – Success")
 @Composable
 private fun CheckBalanceSuccessPreview() {
-    MaterialTheme {
+    AnyPayTheme(darkTheme = false) {
         CheckBalanceScreen(
             operationState = UpiService.OperationState.Success(
                 message = "Balance check successful",
                 transaction = com.idk.anypay.data.model.Transaction(
-                    type = com.idk.anypay.data.model.TransactionType.BALANCE_CHECK,
-                    amount = 0.0,
+                    type    = com.idk.anypay.data.model.TransactionType.BALANCE_CHECK,
+                    amount  = 0.0,
                     balance = 9876.54,
-                    status = com.idk.anypay.data.model.TransactionStatus.SUCCESS
+                    status  = com.idk.anypay.data.model.TransactionStatus.SUCCESS
                 )
             ),
             lastUssdMessage = null,
-            lastBalance = 9876.54,
-            onCheckBalance = {},
-            onCancel = {},
-            onBack = {},
-            onReset = {}
+            lastBalance     = 9876.54,
+            onCheckBalance  = {}, onCancel = {}, onBack = {}, onReset = {}
         )
     }
 }
-

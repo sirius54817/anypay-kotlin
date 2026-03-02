@@ -1,5 +1,6 @@
 package com.idk.anypay.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,16 +18,11 @@ fun LockScreen(
     onAuthenticate: () -> Unit,
     errorMessage: String? = null
 ) {
-    var isAuthenticating by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        // Auto-trigger authentication on screen load
-        onAuthenticate()
-    }
-    
+    LaunchedEffect(Unit) { onAuthenticate() }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier
@@ -35,81 +31,90 @@ fun LockScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                Icons.Default.Lock,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.onPrimary
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = "AnyPay",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Offline UPI Payments",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-            )
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            if (errorMessage != null) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = errorMessage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-            
-            Button(
-                onClick = onAuthenticate,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onPrimary,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.fillMaxWidth()
+            // ── App icon ──────────────────────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Fingerprint, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    Icons.Default.Lock,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                text  = "AnyPay",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                text  = "Offline UPI Payments",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(48.dp))
+
+            // ── Error notice ──────────────────────────────────────────────
+            if (errorMessage != null) {
+                Text(
+                    text      = errorMessage,
+                    style     = MaterialTheme.typography.bodySmall,
+                    color     = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier  = Modifier.padding(bottom = 20.dp)
+                )
+            }
+
+            Button(
+                onClick  = onAuthenticate,
+                modifier = Modifier.fillMaxWidth(),
+                shape    = MaterialTheme.shapes.small,
+                colors   = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor   = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
                 Text("Unlock with Biometrics")
             }
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
+
+            Spacer(Modifier.height(32.dp))
+
             Text(
-                text = "Your credentials are encrypted and stored securely on this device",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                text      = "Your credentials are encrypted and stored securely on this device",
+                style     = MaterialTheme.typography.bodySmall,
+                color     = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
 
-// ─── Previews ────────────────────────────────────────────────────────────────
+// ─── Previews ─────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true, name = "Lock Screen – Default")
+@Preview(showBackground = true, name = "Lock Screen – Light Default")
 @Composable
 private fun LockScreenPreview() {
-    MaterialTheme {
+    AnyPayTheme(darkTheme = false) {
+        LockScreen(onAuthenticate = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Lock Screen – Dark Default")
+@Composable
+private fun LockScreenDarkPreview() {
+    AnyPayTheme(darkTheme = true) {
         LockScreen(onAuthenticate = {})
     }
 }
@@ -117,11 +122,10 @@ private fun LockScreenPreview() {
 @Preview(showBackground = true, name = "Lock Screen – With Error")
 @Composable
 private fun LockScreenErrorPreview() {
-    MaterialTheme {
+    AnyPayTheme(darkTheme = false) {
         LockScreen(
             onAuthenticate = {},
-            errorMessage = "Authentication failed. Please try again."
+            errorMessage   = "Authentication failed. Please try again."
         )
     }
 }
-

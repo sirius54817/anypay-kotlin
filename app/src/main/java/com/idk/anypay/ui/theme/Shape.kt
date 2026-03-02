@@ -5,22 +5,13 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /**
- * Material3 Expressive Shapes
- * Features more rounded, expressive corners compared to standard Material3
+ * shadcn/ui shape scale – slightly rounded, clean geometry.
+ * shadcn uses radius-md (6px) as default; we scale for touch targets.
  */
 val Shapes = Shapes(
-    // Extra Small - Used for small elements like chips
-    extraSmall = RoundedCornerShape(8.dp),
-    
-    // Small - Used for buttons, text fields
-    small = RoundedCornerShape(12.dp),
-    
-    // Medium - Used for cards, dialogs
-    medium = RoundedCornerShape(16.dp),
-    
-    // Large - Used for bottom sheets, navigation drawers
-    large = RoundedCornerShape(24.dp),
-    
-    // Extra Large - Used for full-screen dialogs
-    extraLarge = RoundedCornerShape(32.dp)
+    extraSmall = RoundedCornerShape(4.dp),   // badges, chips
+    small      = RoundedCornerShape(6.dp),   // buttons, inputs
+    medium     = RoundedCornerShape(8.dp),   // cards
+    large      = RoundedCornerShape(12.dp),  // bottom sheets, dialogs
+    extraLarge = RoundedCornerShape(16.dp)   // full-screen modals
 )

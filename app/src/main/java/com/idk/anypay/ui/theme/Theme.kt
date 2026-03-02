@@ -13,113 +13,103 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 
-/**
- * Material3 Expressive Dark Color Scheme
- * Enhanced with expressive colors and refined tones
- */
+// ── shadcn/ui – Dark Color Scheme ───────────────────────────────────────────
 private val DarkColorScheme = darkColorScheme(
-    primary = Blue600,
-    onPrimary = White,
-    primaryContainer = Blue700,
-    onPrimaryContainer = Blue50,
-    secondary = Blue500,
-    onSecondary = White,
-    secondaryContainer = Blue600,
-    onSecondaryContainer = Blue50,
-    tertiary = BalanceBlue,
-    onTertiary = White,
-    tertiaryContainer = Blue700,
-    onTertiaryContainer = Blue50,
-    background = Gray900,
-    onBackground = White,
-    surface = Gray800,
-    onSurface = White,
-    surfaceVariant = Gray700,
-    onSurfaceVariant = Gray200,
-    surfaceContainerHighest = Gray700,
-    surfaceContainerHigh = Gray750,
-    surfaceContainer = Gray800,
-    surfaceContainerLow = Gray850,
-    surfaceContainerLowest = Gray900,
-    error = ErrorRed,
-    onError = White,
-    errorContainer = ErrorRed.copy(alpha = 0.2f),
-    onErrorContainer = ErrorRed
+    primary              = ShadcnPrimaryDark,       // zinc-50
+    onPrimary            = ShadcnPrimaryFgDark,     // zinc-900
+    primaryContainer     = Zinc800,
+    onPrimaryContainer   = Zinc100,
+    secondary            = Zinc400,
+    onSecondary          = Zinc900,
+    secondaryContainer   = Zinc700,
+    onSecondaryContainer = Zinc200,
+    tertiary             = BalanceBlue,
+    onTertiary           = White,
+    tertiaryContainer    = Zinc800,
+    onTertiaryContainer  = Zinc100,
+    background           = Zinc950,                 // near-black
+    onBackground         = Zinc50,
+    surface              = Zinc900,                 // card bg
+    onSurface            = Zinc50,
+    surfaceVariant       = Zinc800,
+    onSurfaceVariant     = Zinc400,
+    surfaceContainerHighest = Zinc700,
+    surfaceContainerHigh    = Zinc800,
+    surfaceContainer        = Zinc900,
+    surfaceContainerLow     = Zinc950,
+    surfaceContainerLowest  = Zinc950,
+    outline              = ShadcnBorderDark,        // zinc-800
+    outlineVariant       = Zinc700,
+    error                = ShadcnDestructive,
+    onError              = White,
+    errorContainer       = ShadcnDestructive.copy(alpha = 0.15f),
+    onErrorContainer     = ShadcnDestructive
 )
 
-/**
- * Material3 Expressive Light Color Scheme
- * Enhanced with expressive colors and refined tones
- */
+// ── shadcn/ui – Light Color Scheme ──────────────────────────────────────────
 private val LightColorScheme = lightColorScheme(
-    primary = Blue700,
-    onPrimary = White,
-    primaryContainer = Blue100,
-    onPrimaryContainer = Blue700,
-    secondary = Blue600,
-    onSecondary = White,
-    secondaryContainer = Blue50,
-    onSecondaryContainer = Blue700,
-    tertiary = BalanceBlue,
-    onTertiary = White,
-    tertiaryContainer = Blue50,
-    onTertiaryContainer = Blue700,
-    background = Gray50,
-    onBackground = Gray900,
-    surface = White,
-    onSurface = Gray900,
-    surfaceVariant = Gray100,
-    onSurfaceVariant = Gray700,
-    surfaceContainerHighest = Gray200,
-    surfaceContainerHigh = Gray100,
-    surfaceContainer = Gray50,
-    surfaceContainerLow = White,
-    surfaceContainerLowest = White,
-    error = ErrorRed,
-    onError = White,
-    errorContainer = ErrorRed.copy(alpha = 0.1f),
-    onErrorContainer = ErrorRed
+    primary              = ShadcnPrimary,           // zinc-900
+    onPrimary            = ShadcnPrimaryFg,         // zinc-50
+    primaryContainer     = Zinc200,
+    onPrimaryContainer   = Zinc900,
+    secondary            = Zinc600,
+    onSecondary          = White,
+    secondaryContainer   = Zinc100,
+    onSecondaryContainer = Zinc700,
+    tertiary             = BalanceBlue,
+    onTertiary           = White,
+    tertiaryContainer    = Color(0xFFEFF6FF),       // blue-50
+    onTertiaryContainer  = Color(0xFF1D4ED8),       // blue-700
+    background           = White,                   // pure white page
+    onBackground         = Zinc900,
+    surface              = White,                   // card bg
+    onSurface            = Zinc900,
+    surfaceVariant       = Zinc100,
+    onSurfaceVariant     = Zinc500,
+    surfaceContainerHighest = Zinc200,
+    surfaceContainerHigh    = Zinc100,
+    surfaceContainer        = Zinc50,
+    surfaceContainerLow     = White,
+    surfaceContainerLowest  = White,
+    outline              = ShadcnBorder,            // zinc-200
+    outlineVariant       = Zinc300,
+    error                = ShadcnDestructive,
+    onError              = White,
+    errorContainer       = Color(0xFFFEF2F2),       // red-50
+    onErrorContainer     = ShadcnDestructive
 )
 
-/**
- * Material3 Expressive Theme with Dynamic Color support
- * 
- * @param darkTheme Whether to use dark theme colors
- * @param dynamicColor Whether to use dynamic color from Android 12+ (Material You)
- * @param content The composable content
- */
 @Composable
 fun AnyPayTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true, // Enable dynamic color by default for Material You
+    dynamicColor: Boolean = false,                  // off – keep shadcn neutrals
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        // Use dynamic color on Android 12+ if enabled
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        // Use custom dark/light schemes
         darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        else      -> LightColorScheme
     }
-    
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        shapes = Shapes,
-        content = content
+        typography  = Typography,
+        shapes      = Shapes,
+        content     = content
     )
 }

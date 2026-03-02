@@ -1,5 +1,8 @@
 package com.idk.anypay.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,11 +12,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.data.model.*
 import com.idk.anypay.ui.theme.*
+
+// ─── Home Screen ─────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,11 +38,13 @@ fun HomeScreen(
     onRequestOverlayPermission: () -> Unit = {}
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Service Status
+        // ── Setup banner ──────────────────────────────────────────────────
         if (!hasPhonePermission || !isAccessibilityEnabled || !hasOverlayPermission) {
             item {
                 ServiceStatusCard(
@@ -48,28 +57,25 @@ fun HomeScreen(
                 )
             }
         }
-        
-        // Balance Card
+
+        // ── Balance card ──────────────────────────────────────────────────
         item {
-            BalanceCard(
-                balance = lastBalance,
-                onRefresh = onCheckBalance
-            )
+            BalanceCard(balance = lastBalance, onRefresh = onCheckBalance)
         }
-        
-        // Quick Actions
+
+        // ── Quick actions ─────────────────────────────────────────────────
         item {
             Text(
                 text = "Quick Actions",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
         }
-        
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 QuickActionCard(
                     title = "Send Money",
@@ -78,7 +84,6 @@ fun HomeScreen(
                     onClick = onSendMoney,
                     modifier = Modifier.weight(1f)
                 )
-                
                 QuickActionCard(
                     title = "Check Balance",
                     icon = Icons.Default.AccountBalance,
@@ -88,8 +93,8 @@ fun HomeScreen(
                 )
             }
         }
-        
-        // Recent Transactions
+
+        // ── Recent transactions header ────────────────────────────────────
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -98,58 +103,35 @@ fun HomeScreen(
             ) {
                 Text(
                     text = "Recent Transactions",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-                
-                TextButton(onClick = onViewHistory) {
-                    Text("View All")
+                TextButton(
+                    onClick = onViewHistory,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text("View all", style = MaterialTheme.typography.labelMedium)
                     Icon(
                         Icons.Default.ChevronRight,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
         }
-        
+
+        // ── Transaction list / empty state ────────────────────────────────
         if (recentTransactions.isEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Default.Receipt,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No transactions yet",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "Your transactions will appear here",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            item { EmptyTransactionsState() }
         } else {
-            items(recentTransactions) { transaction ->
-                TransactionItem(transaction = transaction)
-            }
+            items(recentTransactions) { TransactionItem(transaction = it) }
         }
     }
 }
+
+// ─── Service Status Card ──────────────────────────────────────────────────────
 
 @Composable
 private fun ServiceStatusCard(
@@ -160,366 +142,333 @@ private fun ServiceStatusCard(
     onOpenAccessibilitySettings: () -> Unit,
     onRequestOverlayPermission: () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        ),
-        modifier = Modifier.fillMaxWidth()
+    val borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .border(BorderStroke(1.dp, borderColor), MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Setup Required",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            if (!hasPhonePermission) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Phone Permissions",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Text(
-                            text = "Required for USSD calls",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-                        )
-                    }
-                    Button(
-                        onClick = onRequestPermissions,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text("Grant")
-                    }
-                }
-                
-                if (!isAccessibilityEnabled) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-            }
-            
-            if (!isAccessibilityEnabled) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Accessibility Service",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Text(
-                            text = "Required for USSD automation",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-                        )
-                    }
-                    Button(
-                        onClick = onOpenAccessibilitySettings,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text("Enable")
-                    }
-                }
-            }
-            
-            if (!hasOverlayPermission) {
-                if (!hasPhonePermission || !isAccessibilityEnabled) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Overlay Permission",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Text(
-                            text = "For seamless USSD experience",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-                        )
-                    }
-                    Button(
-                        onClick = onRequestOverlayPermission,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text("Allow")
-                    }
-                }
-            }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Setup Required",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
         }
+        if (!hasPhonePermission) PermissionRow(
+            label = "Phone Permission",
+            subtitle = "Required for USSD calls",
+            actionLabel = "Grant",
+            onClick = onRequestPermissions
+        )
+        if (!isAccessibilityEnabled) PermissionRow(
+            label = "Accessibility Service",
+            subtitle = "Required for USSD automation",
+            actionLabel = "Enable",
+            onClick = onOpenAccessibilitySettings
+        )
+        if (!hasOverlayPermission) PermissionRow(
+            label = "Overlay Permission",
+            subtitle = "For seamless USSD experience",
+            actionLabel = "Allow",
+            onClick = onRequestOverlayPermission
+        )
     }
 }
 
 @Composable
-private fun BalanceCard(
-    balance: Double,
-    onRefresh: () -> Unit
+private fun PermissionRow(
+    label: String,
+    subtitle: String,
+    actionLabel: String,
+    onClick: () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        ),
-        modifier = Modifier.fillMaxWidth()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Available Balance",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                )
-                IconButton(onClick = onRefresh) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "Refresh Balance",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-            
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "₹${String.format("%,.2f", balance)}",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onPrimary
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
             Text(
-                text = "Tap refresh to check current balance via USSD",
+                text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
             )
+        }
+        Spacer(Modifier.width(12.dp))
+        OutlinedButton(
+            onClick = onClick,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(actionLabel, style = MaterialTheme.typography.labelMedium)
         }
     }
 }
+
+// ─── Balance Card ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun BalanceCard(balance: Double, onRefresh: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                MaterialTheme.shapes.medium
+            )
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Available Balance",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "₹${String.format("%,.2f", balance)}",
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = "Tap refresh to update via USSD",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// ─── Quick Action Card ────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuickActionCard(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        modifier = modifier
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = color.copy(alpha = 0.1f),
-                modifier = Modifier.size(56.dp)
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(color.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = color,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
 }
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun EmptyTransactionsState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                MaterialTheme.shapes.medium
+            )
+            .padding(vertical = 40.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            Icons.Default.Receipt,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        )
+        Text(
+            text = "No transactions yet",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "Your transactions will appear here",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// ─── Transaction Item ─────────────────────────────────────────────────────────
 
 @Composable
 fun TransactionItem(
     transaction: Transaction,
     onClick: (() -> Unit)? = null
 ) {
-    val containerModifier = if (onClick != null) {
-        Modifier.fillMaxWidth()
-    } else {
-        Modifier.fillMaxWidth()
+    val iconColor = when (transaction.type) {
+        TransactionType.SEND          -> SendRed
+        TransactionType.RECEIVE       -> ReceiveGreen
+        TransactionType.BALANCE_CHECK -> BalanceBlue
     }
-    
-    Card(
-        modifier = containerModifier
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                MaterialTheme.shapes.medium
+            )
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Icon
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(38.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(iconColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
         ) {
-            // Transaction type icon
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = when (transaction.type) {
-                    TransactionType.SEND -> SendRed.copy(alpha = 0.1f)
-                    TransactionType.RECEIVE -> ReceiveGreen.copy(alpha = 0.1f)
-                    TransactionType.BALANCE_CHECK -> BalanceBlue.copy(alpha = 0.1f)
+            Icon(
+                when (transaction.type) {
+                    TransactionType.SEND          -> Icons.Default.ArrowUpward
+                    TransactionType.RECEIVE       -> Icons.Default.ArrowDownward
+                    TransactionType.BALANCE_CHECK -> Icons.Default.AccountBalance
                 },
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        when (transaction.type) {
-                            TransactionType.SEND -> Icons.Default.ArrowUpward
-                            TransactionType.RECEIVE -> Icons.Default.ArrowDownward
-                            TransactionType.BALANCE_CHECK -> Icons.Default.AccountBalance
-                        },
-                        contentDescription = null,
-                        tint = when (transaction.type) {
-                            TransactionType.SEND -> SendRed
-                            TransactionType.RECEIVE -> ReceiveGreen
-                            TransactionType.BALANCE_CHECK -> BalanceBlue
-                        }
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            // Transaction details
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        // Details
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = when (transaction.type) {
+                    TransactionType.SEND          -> transaction.recipientVpa.ifEmpty { "Payment" }
+                    TransactionType.RECEIVE       -> transaction.recipientName.ifEmpty { "Received" }
+                    TransactionType.BALANCE_CHECK -> "Balance Check"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = when (transaction.type) {
-                        TransactionType.SEND -> transaction.recipientVpa.ifEmpty { "Payment" }
-                        TransactionType.RECEIVE -> transaction.recipientName.ifEmpty { "Received" }
-                        TransactionType.BALANCE_CHECK -> "Balance Check"
-                    },
-                    style = MaterialTheme.typography.bodyLarge
+                    text = transaction.formattedTime,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = transaction.formattedTime,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    if (transaction.message.isNotEmpty() && transaction.type == TransactionType.SEND) {
+                if (transaction.message.isNotEmpty() && transaction.type == TransactionType.SEND) {
+                    Box(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .background(Color(transaction.category.color).copy(alpha = 0.1f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
                         Text(
-                            text = " • ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = transaction.category.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(transaction.category.color)
                         )
-                        
-                        Surface(
-                            shape = MaterialTheme.shapes.extraSmall,
-                            color = Color(transaction.category.color).copy(alpha = 0.1f)
-                        ) {
-                            Text(
-                                text = transaction.category.label,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(transaction.category.color),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
                     }
                 }
             }
-            
-            // Amount and status
-            Column(
-                horizontalAlignment = Alignment.End
+        }
+
+        // Amount + status
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = transaction.formattedAmount,
+                style = MaterialTheme.typography.titleSmall,
+                color = transaction.amountColor
+            )
+            Spacer(Modifier.height(3.dp))
+            val statusBg = when (transaction.status) {
+                TransactionStatus.SUCCESS -> SuccessGreen.copy(alpha = 0.1f)
+                TransactionStatus.FAILED  -> ErrorRed.copy(alpha = 0.1f)
+                TransactionStatus.PENDING -> PendingAmber.copy(alpha = 0.1f)
+            }
+            val statusFg = when (transaction.status) {
+                TransactionStatus.SUCCESS -> SuccessGreen
+                TransactionStatus.FAILED  -> ErrorRed
+                TransactionStatus.PENDING -> PendingAmber
+            }
+            Box(
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .background(statusBg)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = transaction.formattedAmount,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = transaction.amountColor
+                    text = transaction.status.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = statusFg
                 )
-                
-                Surface(
-                    shape = MaterialTheme.shapes.extraSmall,
-                    color = when (transaction.status) {
-                        TransactionStatus.SUCCESS -> SuccessGreen.copy(alpha = 0.1f)
-                        TransactionStatus.FAILED -> ErrorRed.copy(alpha = 0.1f)
-                        TransactionStatus.PENDING -> PendingOrange.copy(alpha = 0.1f)
-                    }
-                ) {
-                    Text(
-                        text = transaction.status.name,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when (transaction.status) {
-                            TransactionStatus.SUCCESS -> SuccessGreen
-                            TransactionStatus.FAILED -> ErrorRed
-                            TransactionStatus.PENDING -> PendingOrange
-                        },
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
             }
         }
     }
 }
 
-// ─── Previews ────────────────────────────────────────────────────────────────
+// ─── Previews ─────────────────────────────────────────────────────────────────
 
 private val sampleTransactions = listOf(
     Transaction(
@@ -544,10 +493,30 @@ private val sampleTransactions = listOf(
     )
 )
 
-@Preview(showBackground = true, name = "Home – All Good")
+@Preview(showBackground = true, name = "Home – Light / All Good")
 @Composable
 private fun HomeScreenPreview() {
-    MaterialTheme {
+    AnyPayTheme(darkTheme = false) {
+        HomeScreen(
+            recentTransactions = sampleTransactions,
+            lastBalance = 12345.67,
+            hasPhonePermission = true,
+            isAccessibilityEnabled = true,
+            hasOverlayPermission = true,
+            onSendMoney = {},
+            onCheckBalance = {},
+            onViewHistory = {},
+            onRequestPermissions = {},
+            onOpenAccessibilitySettings = {},
+            onRequestOverlayPermission = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home – Dark / All Good")
+@Composable
+private fun HomeScreenDarkPreview() {
+    AnyPayTheme(darkTheme = true) {
         HomeScreen(
             recentTransactions = sampleTransactions,
             lastBalance = 12345.67,
@@ -567,7 +536,7 @@ private fun HomeScreenPreview() {
 @Preview(showBackground = true, name = "Home – Permissions Missing")
 @Composable
 private fun HomeScreenPermissionMissingPreview() {
-    MaterialTheme {
+    AnyPayTheme(darkTheme = false) {
         HomeScreen(
             recentTransactions = emptyList(),
             lastBalance = 0.0,
@@ -587,10 +556,14 @@ private fun HomeScreenPermissionMissingPreview() {
 @Preview(showBackground = true, name = "Transaction Item")
 @Composable
 private fun TransactionItemPreview() {
-    MaterialTheme {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    AnyPayTheme(darkTheme = false) {
+        Column(
+            Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             sampleTransactions.forEach { TransactionItem(transaction = it) }
         }
     }
 }
-

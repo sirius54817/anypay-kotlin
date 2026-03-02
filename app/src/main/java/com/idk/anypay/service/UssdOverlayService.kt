@@ -9,9 +9,12 @@ import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -139,65 +142,55 @@ fun UssdOverlayContent(messageState: State<String>) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xF0000000)),
+            .background(Color(0xE8000000)),   // near-black scrim – shadcn overlay
         contentAlignment = Alignment.Center
     ) {
-        Card(
+        // shadcn-style card: white surface, subtle border, minimal rounding
+        Column(
             modifier = Modifier
                 .fillMaxWidth(0.88f)
-                .padding(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+                .clip(MaterialTheme.shapes.large)
+                .border(BorderStroke(1.dp, Color(0xFFE4E4E7)), MaterialTheme.shapes.large)
+                .background(Color(0xFFFFFFFF))
+                .padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
+            // Spinner in a small muted box
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                    .size(56.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(Color(0xFFF4F4F5)),
+                contentAlignment = Alignment.Center
             ) {
-                // Icon with colored background
-                Surface(
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 4.dp
-                        )
-                    }
-                }
-                
-                Text(
-                    text = "Processing Payment",
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Text(
-                    text = messageState.value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Text(
-                    text = "Please wait...",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    color    = Color(0xFF18181B),
+                    strokeWidth = 2.5.dp
                 )
             }
+
+            Text(
+                text      = "Processing Payment",
+                style     = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+                color     = Color(0xFF18181B)
+            )
+
+            Text(
+                text      = messageState.value,
+                style     = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color     = Color(0xFF71717A)
+            )
+
+            Text(
+                text      = "Please wait…",
+                style     = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color     = Color(0xFFA1A1AA)
+            )
         }
     }
 }
