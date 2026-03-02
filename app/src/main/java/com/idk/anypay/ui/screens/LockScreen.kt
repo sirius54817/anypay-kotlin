@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.ui.theme.*
 
@@ -102,3 +103,25 @@ fun LockScreen(
         }
     }
 }
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, name = "Lock Screen – Default")
+@Composable
+private fun LockScreenPreview() {
+    MaterialTheme {
+        LockScreen(onAuthenticate = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Lock Screen – With Error")
+@Composable
+private fun LockScreenErrorPreview() {
+    MaterialTheme {
+        LockScreen(
+            onAuthenticate = {},
+            errorMessage = "Authentication failed. Please try again."
+        )
+    }
+}
+

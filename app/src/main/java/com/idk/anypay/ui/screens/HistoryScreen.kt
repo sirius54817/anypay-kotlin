@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.data.model.*
 import com.idk.anypay.ui.theme.*
@@ -383,3 +384,58 @@ private fun CategoryStatItem(
         }
     }
 }
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+private val previewTransactions = listOf(
+    Transaction(
+        type = TransactionType.SEND,
+        amount = 250.0,
+        recipientVpa = "zomato@upi",
+        status = TransactionStatus.SUCCESS,
+        message = "zomato order"
+    ),
+    Transaction(
+        type = TransactionType.SEND,
+        amount = 1500.0,
+        recipientVpa = "electricity@upi",
+        status = TransactionStatus.SUCCESS,
+        message = "electricity bill"
+    ),
+    Transaction(
+        type = TransactionType.BALANCE_CHECK,
+        amount = 0.0,
+        balance = 9876.0,
+        status = TransactionStatus.SUCCESS
+    )
+)
+
+@Preview(showBackground = true, name = "History – Transactions Tab")
+@Composable
+private fun HistoryScreenTransactionsPreview() {
+    MaterialTheme {
+        HistoryScreen(
+            transactions = previewTransactions,
+            totalSpent = 1750.0,
+            averageTransaction = 875.0,
+            categoryStats = mapOf(
+                PaymentCategory.FOOD_DINING to Pair(3, 750.0),
+                PaymentCategory.BILLS_UTILITIES to Pair(2, 1000.0)
+            )
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "History – Empty")
+@Composable
+private fun HistoryScreenEmptyPreview() {
+    MaterialTheme {
+        HistoryScreen(
+            transactions = emptyList(),
+            totalSpent = 0.0,
+            averageTransaction = 0.0,
+            categoryStats = emptyMap()
+        )
+    }
+}
+

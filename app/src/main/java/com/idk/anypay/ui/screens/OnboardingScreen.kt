@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.data.model.SUPPORTED_BANKS
 import com.idk.anypay.data.model.UserCredentials
@@ -512,3 +513,14 @@ private fun CardDetailsStep(
         }
     }
 }
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, name = "Onboarding – Step 1 Mobile")
+@Composable
+private fun OnboardingScreenStep1Preview() {
+    MaterialTheme {
+        OnboardingScreen(onComplete = {})
+    }
+}
+

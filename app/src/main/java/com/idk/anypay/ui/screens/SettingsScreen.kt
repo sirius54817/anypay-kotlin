@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -362,3 +363,41 @@ private fun ChangePinDialog(
         }
     )
 }
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, name = "Settings – With Credentials")
+@Composable
+private fun SettingsScreenPreview() {
+    MaterialTheme {
+        SettingsScreen(
+            credentials = UserCredentials(
+                mobileNumber = "9876543210",
+                upiPin = "1234",
+                bankName = "State Bank of India",
+                bankIfsc = "SBIN0001234",
+                cardLastSixDigits = "123456",
+                cardExpiryMonth = "01",
+                cardExpiryYear = "28",
+                isSetupComplete = true
+            ),
+            onUpdatePin = {},
+            onClearData = {},
+            onOpenAccessibilitySettings = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Settings – No Credentials")
+@Composable
+private fun SettingsScreenNoCredsPreview() {
+    MaterialTheme {
+        SettingsScreen(
+            credentials = null,
+            onUpdatePin = {},
+            onClearData = {},
+            onOpenAccessibilitySettings = {}
+        )
+    }
+}
+

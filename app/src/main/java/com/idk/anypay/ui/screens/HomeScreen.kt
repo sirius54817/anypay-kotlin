@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.data.model.*
 import com.idk.anypay.ui.theme.*
@@ -517,3 +518,79 @@ fun TransactionItem(
         }
     }
 }
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+private val sampleTransactions = listOf(
+    Transaction(
+        type = TransactionType.SEND,
+        amount = 500.0,
+        recipientVpa = "john@upi",
+        recipientName = "John",
+        status = TransactionStatus.SUCCESS,
+        message = "Lunch zomato"
+    ),
+    Transaction(
+        type = TransactionType.RECEIVE,
+        amount = 1000.0,
+        recipientName = "Alice",
+        status = TransactionStatus.SUCCESS
+    ),
+    Transaction(
+        type = TransactionType.BALANCE_CHECK,
+        amount = 0.0,
+        balance = 12345.67,
+        status = TransactionStatus.SUCCESS
+    )
+)
+
+@Preview(showBackground = true, name = "Home – All Good")
+@Composable
+private fun HomeScreenPreview() {
+    MaterialTheme {
+        HomeScreen(
+            recentTransactions = sampleTransactions,
+            lastBalance = 12345.67,
+            hasPhonePermission = true,
+            isAccessibilityEnabled = true,
+            hasOverlayPermission = true,
+            onSendMoney = {},
+            onCheckBalance = {},
+            onViewHistory = {},
+            onRequestPermissions = {},
+            onOpenAccessibilitySettings = {},
+            onRequestOverlayPermission = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home – Permissions Missing")
+@Composable
+private fun HomeScreenPermissionMissingPreview() {
+    MaterialTheme {
+        HomeScreen(
+            recentTransactions = emptyList(),
+            lastBalance = 0.0,
+            hasPhonePermission = false,
+            isAccessibilityEnabled = false,
+            hasOverlayPermission = false,
+            onSendMoney = {},
+            onCheckBalance = {},
+            onViewHistory = {},
+            onRequestPermissions = {},
+            onOpenAccessibilitySettings = {},
+            onRequestOverlayPermission = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Transaction Item")
+@Composable
+private fun TransactionItemPreview() {
+    MaterialTheme {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            sampleTransactions.forEach { TransactionItem(transaction = it) }
+        }
+    }
+}
+

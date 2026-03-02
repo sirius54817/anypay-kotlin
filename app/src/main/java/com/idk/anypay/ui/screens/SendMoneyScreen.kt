@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.data.model.UpiPaymentInfo
@@ -387,3 +388,81 @@ fun CompletionScreen(
         }
     }
 }
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, name = "Send Money – Idle")
+@Composable
+private fun SendMoneyIdlePreview() {
+    MaterialTheme {
+        SendMoneyScreen(
+            operationState = UpiService.OperationState.Idle,
+            lastUssdMessage = null,
+            onSendMoney = { _, _, _ -> },
+            onCancel = {},
+            onScanQr = {},
+            onBack = {},
+            onReset = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Send Money – Filled Form")
+@Composable
+private fun SendMoneyFilledPreview() {
+    MaterialTheme {
+        SendMoneyScreen(
+            operationState = UpiService.OperationState.Idle,
+            lastUssdMessage = null,
+            initialRecipient = "john@upi",
+            initialAmount = "500",
+            initialRemarks = "Lunch split",
+            onSendMoney = { _, _, _ -> },
+            onCancel = {},
+            onScanQr = {},
+            onBack = {},
+            onReset = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Send Money – Processing")
+@Composable
+private fun SendMoneyProcessingPreview() {
+    MaterialTheme {
+        SendMoneyScreen(
+            operationState = UpiService.OperationState.InProgress("Connecting to bank..."),
+            lastUssdMessage = "Enter your UPI PIN",
+            onSendMoney = { _, _, _ -> },
+            onCancel = {},
+            onScanQr = {},
+            onBack = {},
+            onReset = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Send Money – Success")
+@Composable
+private fun SendMoneySuccessPreview() {
+    MaterialTheme {
+        SendMoneyScreen(
+            operationState = UpiService.OperationState.Success(
+                message = "Payment of ₹500.00 sent to john@upi",
+                transaction = com.idk.anypay.data.model.Transaction(
+                    type = com.idk.anypay.data.model.TransactionType.SEND,
+                    amount = 500.0,
+                    recipientVpa = "john@upi",
+                    status = com.idk.anypay.data.model.TransactionStatus.SUCCESS
+                )
+            ),
+            lastUssdMessage = null,
+            onSendMoney = { _, _, _ -> },
+            onCancel = {},
+            onScanQr = {},
+            onBack = {},
+            onReset = {}
+        )
+    }
+}
+

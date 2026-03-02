@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.idk.anypay.service.UpiService
 import com.idk.anypay.ui.theme.*
@@ -268,3 +269,62 @@ private fun BalanceResultScreen(
         }
     }
 }
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, name = "Check Balance – Idle")
+@Composable
+private fun CheckBalanceIdlePreview() {
+    MaterialTheme {
+        CheckBalanceScreen(
+            operationState = UpiService.OperationState.Idle,
+            lastUssdMessage = null,
+            lastBalance = 12345.67,
+            onCheckBalance = {},
+            onCancel = {},
+            onBack = {},
+            onReset = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Check Balance – Processing")
+@Composable
+private fun CheckBalanceProcessingPreview() {
+    MaterialTheme {
+        CheckBalanceScreen(
+            operationState = UpiService.OperationState.InProgress("Sending USSD request..."),
+            lastUssdMessage = "Please wait while we check your balance",
+            lastBalance = 12345.67,
+            onCheckBalance = {},
+            onCancel = {},
+            onBack = {},
+            onReset = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Check Balance – Success")
+@Composable
+private fun CheckBalanceSuccessPreview() {
+    MaterialTheme {
+        CheckBalanceScreen(
+            operationState = UpiService.OperationState.Success(
+                message = "Balance check successful",
+                transaction = com.idk.anypay.data.model.Transaction(
+                    type = com.idk.anypay.data.model.TransactionType.BALANCE_CHECK,
+                    amount = 0.0,
+                    balance = 9876.54,
+                    status = com.idk.anypay.data.model.TransactionStatus.SUCCESS
+                )
+            ),
+            lastUssdMessage = null,
+            lastBalance = 9876.54,
+            onCheckBalance = {},
+            onCancel = {},
+            onBack = {},
+            onReset = {}
+        )
+    }
+}
+
