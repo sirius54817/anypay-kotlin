@@ -128,13 +128,7 @@ fun MainNavigation(
                     hasOverlayPermission = hasOverlayPermission,
                     isAccessibilityEnabled = isAccessibilityEnabled,
                     requiresRestrictedSettings = requiresRestrictedSettings,
-                    onSendMoney = {
-                        pendingRecipient = ""
-                        pendingAmount = ""
-                        pendingRemarks = ""
-                        navController.navigate(Screen.SendMoney.route) 
-                    },
-                    onCheckBalance = { 
+                    onCheckBalance = {
                         if (hasPhonePermission && isAccessibilityEnabled) {
                             navController.navigate(Screen.CheckBalance.route)
                         } else if (!hasPhonePermission) {
@@ -143,7 +137,14 @@ fun MainNavigation(
                             onOpenAccessibilitySettings()
                         }
                     },
-                    onViewHistory = { 
+                    onScanToPay = {
+                        if (hasCameraPermission) {
+                            navController.navigate(Screen.QrScanner.route)
+                        } else {
+                            onRequestCameraPermission()
+                        }
+                    },
+                    onViewHistory = {
                         navController.navigate(Screen.History.route) {
                             popUpTo(Screen.Home.route) { saveState = true }
                             launchSingleTop = true
@@ -231,7 +232,10 @@ fun MainNavigation(
                         pendingRecipient = paymentInfo.upiId
                         pendingAmount = paymentInfo.amount?.toString() ?: ""
                         pendingRemarks = paymentInfo.note.ifEmpty { paymentInfo.name }
-                        navController.popBackStack()
+                        // Navigate to SendMoney with scanned data
+                        navController.navigate(Screen.SendMoney.route) {
+                            popUpTo(Screen.QrScanner.route) { inclusive = true }
+                        }
                     },
                     onBack = { navController.popBackStack() }
                 )

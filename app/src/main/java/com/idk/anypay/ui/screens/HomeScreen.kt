@@ -31,8 +31,8 @@ fun HomeScreen(
     isAccessibilityEnabled: Boolean,
     hasOverlayPermission: Boolean = true,
     requiresRestrictedSettings: Boolean = false,
-    onSendMoney: () -> Unit,
     onCheckBalance: () -> Unit,
+    onScanToPay: () -> Unit,
     onViewHistory: () -> Unit,
     onRequestPermissions: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
@@ -62,11 +62,6 @@ fun HomeScreen(
             }
         }
 
-        // ── Balance card ──────────────────────────────────────────────────
-        item {
-            BalanceCard(balance = lastBalance, onRefresh = onCheckBalance)
-        }
-
         // ── Quick actions ─────────────────────────────────────────────────
         item {
             Text(
@@ -82,17 +77,17 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 QuickActionCard(
-                    title = "Send Money",
-                    icon = Icons.Default.Send,
-                    color = SendRed,
-                    onClick = onSendMoney,
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionCard(
                     title = "Check Balance",
                     icon = Icons.Default.AccountBalance,
                     color = BalanceBlue,
                     onClick = onCheckBalance,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionCard(
+                    title = "Scan to Pay",
+                    icon = Icons.Default.QrCodeScanner,
+                    color = ReceiveGreen,
+                    onClick = onScanToPay,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -335,55 +330,6 @@ private fun PermissionRow(
     }
 }
 
-// ─── Balance Card ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun BalanceCard(balance: Double, onRefresh: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                MaterialTheme.shapes.medium
-            )
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Available Balance",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    Icons.Default.Refresh,
-                    contentDescription = "Refresh",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "₹${String.format("%,.2f", balance)}",
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = "Tap refresh to update via USSD",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
 // ─── Quick Action Card ────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -613,8 +559,8 @@ private fun HomeScreenPreview() {
             hasPhonePermission = true,
             isAccessibilityEnabled = true,
             hasOverlayPermission = true,
-            onSendMoney = {},
             onCheckBalance = {},
+            onScanToPay = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -633,8 +579,8 @@ private fun HomeScreenDarkPreview() {
             hasPhonePermission = true,
             isAccessibilityEnabled = true,
             hasOverlayPermission = true,
-            onSendMoney = {},
             onCheckBalance = {},
+            onScanToPay = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -654,8 +600,8 @@ private fun HomeScreenPermissionMissingPreview() {
             isAccessibilityEnabled = false,
             hasOverlayPermission = false,
             requiresRestrictedSettings = false,
-            onSendMoney = {},
             onCheckBalance = {},
+            onScanToPay = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -675,8 +621,8 @@ private fun HomeScreenRestrictedSettingsPreview() {
             isAccessibilityEnabled = false,
             hasOverlayPermission = true,
             requiresRestrictedSettings = true,
-            onSendMoney = {},
             onCheckBalance = {},
+            onScanToPay = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
