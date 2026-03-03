@@ -137,6 +137,12 @@ fun MainNavigation(
                             onOpenAccessibilitySettings()
                         }
                     },
+                    onSendMoney = {
+                        pendingRecipient = ""
+                        pendingAmount = ""
+                        pendingRemarks = ""
+                        navController.navigate(Screen.SendMoney.route)
+                    },
                     onScanToPay = {
                         if (hasCameraPermission) {
                             navController.navigate(Screen.QrScanner.route)

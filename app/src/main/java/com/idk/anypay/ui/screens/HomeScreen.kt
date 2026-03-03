@@ -33,6 +33,7 @@ fun HomeScreen(
     requiresRestrictedSettings: Boolean = false,
     onCheckBalance: () -> Unit,
     onScanToPay: () -> Unit,
+    onSendMoney: () -> Unit,
     onViewHistory: () -> Unit,
     onRequestPermissions: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
@@ -72,23 +73,32 @@ fun HomeScreen(
             )
         }
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                QuickActionCard(
-                    title = "Check Balance",
-                    icon = Icons.Default.AccountBalance,
-                    color = BalanceBlue,
-                    onClick = onCheckBalance,
-                    modifier = Modifier.weight(1f)
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    QuickActionCard(
+                        title = "Check Balance",
+                        icon = Icons.Default.AccountBalance,
+                        color = BalanceBlue,
+                        onClick = onCheckBalance,
+                        modifier = Modifier.weight(1f)
+                    )
+                    QuickActionCard(
+                        title = "Send Money",
+                        icon = Icons.Default.ArrowUpward,
+                        color = SendRed,
+                        onClick = onSendMoney,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 QuickActionCard(
                     title = "Scan to Pay",
                     icon = Icons.Default.QrCodeScanner,
                     color = ReceiveGreen,
                     onClick = onScanToPay,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -561,6 +571,7 @@ private fun HomeScreenPreview() {
             hasOverlayPermission = true,
             onCheckBalance = {},
             onScanToPay = {},
+            onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -581,6 +592,7 @@ private fun HomeScreenDarkPreview() {
             hasOverlayPermission = true,
             onCheckBalance = {},
             onScanToPay = {},
+            onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -602,6 +614,7 @@ private fun HomeScreenPermissionMissingPreview() {
             requiresRestrictedSettings = false,
             onCheckBalance = {},
             onScanToPay = {},
+            onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -623,6 +636,7 @@ private fun HomeScreenRestrictedSettingsPreview() {
             requiresRestrictedSettings = true,
             onCheckBalance = {},
             onScanToPay = {},
+            onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
