@@ -128,6 +128,8 @@ fun MainNavigation(
                     hasOverlayPermission = hasOverlayPermission,
                     isAccessibilityEnabled = isAccessibilityEnabled,
                     requiresRestrictedSettings = requiresRestrictedSettings,
+                    hasCameraPermission = hasCameraPermission,
+                    onRequestCameraPermission = onRequestCameraPermission,
                     onCheckBalance = {
                         if (hasPhonePermission && isAccessibilityEnabled) {
                             navController.navigate(Screen.CheckBalance.route)
@@ -143,12 +145,11 @@ fun MainNavigation(
                         pendingRemarks = ""
                         navController.navigate(Screen.SendMoney.route)
                     },
-                    onScanToPay = {
-                        if (hasCameraPermission) {
-                            navController.navigate(Screen.QrScanner.route)
-                        } else {
-                            onRequestCameraPermission()
-                        }
+                    onScanToPay = { paymentInfo ->
+                        pendingRecipient = paymentInfo.upiId
+                        pendingAmount    = paymentInfo.amount?.toString() ?: ""
+                        pendingRemarks   = paymentInfo.note.ifEmpty { paymentInfo.name }
+                        navController.navigate(Screen.SendMoney.route)
                     },
                     onViewHistory = {
                         navController.navigate(Screen.History.route) {
