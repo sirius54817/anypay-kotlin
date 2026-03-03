@@ -34,13 +34,13 @@ fun CheckBalanceScreen(
 
     var hasUpdatedTransaction by remember { mutableStateOf(false) }
 
-    LaunchedEffect(isComplete) {
-        if (isComplete && !hasUpdatedTransaction) {
-            if (operationState is UpiService.OperationState.Success) {
-                operationState.transaction?.let {
-                    onUpdateTransaction?.invoke(it)
-                    hasUpdatedTransaction = true
-                }
+    // Use operationState as key so this fires every time state changes to Success
+    LaunchedEffect(operationState) {
+        if (!hasUpdatedTransaction && operationState is UpiService.OperationState.Success) {
+            val tx = operationState.transaction
+            if (tx != null) {
+                onUpdateTransaction?.invoke(tx)
+                hasUpdatedTransaction = true
             }
         }
     }

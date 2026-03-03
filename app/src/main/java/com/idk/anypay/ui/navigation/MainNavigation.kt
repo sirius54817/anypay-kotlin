@@ -219,17 +219,20 @@ fun MainNavigation(
             
             composable(Screen.CheckBalance.route) {
                 CheckBalanceScreen(
-                    operationState = operationState,
+                    operationState  = operationState,
                     lastUssdMessage = lastUssdMessage,
-                    lastBalance = lastBalance,
-                    onCheckBalance = {
+                    lastBalance     = lastBalance,
+                    onCheckBalance  = {
                         if (hasPhonePermission && isAccessibilityEnabled) {
                             onCheckBalance()
                         }
                     },
-                    onCancel = onCancelOperation,
-                    onBack = { navController.popBackStack() },
-                    onReset = onResetOperation
+                    onCancel        = onCancelOperation,
+                    onBack          = { navController.popBackStack() },
+                    onReset         = onResetOperation,
+                    onUpdateTransaction = { transaction ->
+                        onUpdateTransaction(transaction)
+                    }
                 )
             }
             
