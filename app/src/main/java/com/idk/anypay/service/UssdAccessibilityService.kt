@@ -525,67 +525,40 @@ class UssdAccessibilityService : AccessibilityService() {
         lowerMessage: String,
         hasNumberedOptions: Boolean
     ): String? {
-        // ── 1. Remarks prompt — check FIRST before any numbered-option logic
-        //    because some banks show "Enter remarks (optional)" with a numbered
-        //    confirmation list below, making hasNumberedOptions = true and skipping
-        //    remarks entirely.
-        if (!operation.sentRemarks && isAskingForRemarks(lowerMessage)) {
-            Log.d(TAG, "Remarks prompt detected (early check)")
-            operation.sentRemarks = true
-            operation.step++
-            // Send remarks text. If blank, send a single space so the field isn't empty.
-            return operation.remarks.ifBlank { " " }
-        }
-
-        // ── 2. Confirmation screen — "confirm / proceed / yes" after amount entry
-        //    Some banks show a summary screen with 1.Confirm 2.Cancel before asking PIN.
-        if (hasNumberedOptions &&
-            operation.sentAmount && !operation.sentPin &&
-            (lowerMessage.contains("confirm") || lowerMessage.contains("proceed") ||
-             lowerMessage.contains("pay now") || lowerMessage.contains("1. confirm") ||
-             lowerMessage.contains("1. yes"))
-        ) {
-            val confirmOption = findMenuOption(message, listOf("confirm", "proceed", "yes", "pay now")) ?: "1"
-            Log.d(TAG, "Confirmation screen detected, selecting: $confirmOption")
-            operation.step++
-            return confirmOption
-        }
-
-        // ── 3. Main numbered menu — pick "Send Money / Transfer / Pay"
-        if (hasNumberedOptions && !operation.selectedMenuOption) {
-            val sendOption = findMenuOption(message, listOf("send money", "transfer", "pay"))
-            if (sendOption != null) {
-                Log.d(TAG, "Selecting send option: $sendOption")
-                operation.selectedMenuOption = true
-                operation.step++
-                return sendOption
-            }
-        }
-
-        // ── 4. Payment method sub-menu — Mobile / MMID / UPI ID
-        if (hasNumberedOptions && operation.selectedMenuOption && !operation.selectedPaymentMethod) {
-            if (lowerMessage.contains("send money to") ||
-                lowerMessage.contains("mobile no") ||
-                lowerMessage.contains("upi id")) {
-
-                val isUpiId       = operation.recipient.contains("@")
-                val isMobileNumber = operation.recipient.matches(Regex("^\\d{10}$"))
-                Log.d(TAG, "Recipient type: isUpiId=$isUpiId, isMobile=$isMobileNumber")
-
-                val option = when {
-                    isUpiId        -> findMenuOption(message, listOf("upi id", "vpa"))      ?: "3"
-                    isMobileNumber -> findMenuOption(message, listOf("mobile no", "mobile number")) ?: "1"
-                    else           -> "1"
+        if (hasNumberedOptions) {
+            if (!operation.selectedMenuOption) {
+                val sendOption = findMenuOption(message, listOf("send money", "transfer", "pay"))
+                if (sendOption != null) {
+                    Log.d(TAG, "Selecting send option: $sendOption")
+                    operation.selectedMenuOption = true
+                    operation.step++
+                    return sendOption
                 }
-
-                Log.d(TAG, "Selecting payment method: $option")
-                operation.selectedPaymentMethod = true
-                operation.step++
-                return option
+            }
+            
+            if (operation.selectedMenuOption && !operation.selectedPaymentMethod) {
+                if (lowerMessage.contains("send money to") || 
+                    lowerMessage.contains("mobile no") ||
+                    lowerMessage.contains("upi id")) {
+                    
+                    val isUpiId = operation.recipient.contains("@")
+                    val isMobileNumber = operation.recipient.matches(Regex("^\\d{10}$"))
+                    Log.d(TAG, "Recipient type: isUpiId=$isUpiId, isMobile=$isMobileNumber")
+                    
+                    val option = when {
+                        isUpiId -> findMenuOption(message, listOf("upi id", "vpa")) ?: "3"
+                        isMobileNumber -> findMenuOption(message, listOf("mobile no", "mobile number")) ?: "1"
+                        else -> "1"
+                    }
+                    
+                    Log.d(TAG, "Selecting payment method: $option")
+                    operation.selectedPaymentMethod = true
+                    operation.step++
+                    return option
+                }
             }
         }
-
-        // ── 5. Free-text prompts (no numbered options)
+        
         if (!hasNumberedOptions) {
             if (isAskingForPin(lowerMessage) && !operation.sentPin) {
                 Log.d(TAG, "PIN prompt detected")
@@ -593,21 +566,21 @@ class UssdAccessibilityService : AccessibilityService() {
                 operation.step++
                 return operation.upiPin
             }
-
+            
             if (isAskingForBank(lowerMessage) && !operation.sentBank) {
                 Log.d(TAG, "Bank prompt detected")
                 operation.sentBank = true
                 operation.step++
                 return operation.bankInput
             }
-
+            
             if (isAskingForCard(lowerMessage) && !operation.sentCard) {
                 Log.d(TAG, "Card prompt detected")
                 operation.sentCard = true
                 operation.step++
                 return operation.cardDetails
             }
-
+            
             if (isAskingForRecipient(lowerMessage) && !operation.sentRecipient) {
                 if (message.contains(operation.recipient)) {
                     Log.d(TAG, "Recipient already echoed in dialog, skipping")
@@ -618,7 +591,7 @@ class UssdAccessibilityService : AccessibilityService() {
                 operation.step++
                 return operation.recipient
             }
-
+            
             if (isAskingForAmount(lowerMessage) && !operation.sentAmount) {
                 if (message.contains(operation.amount)) {
                     Log.d(TAG, "Amount already echoed in dialog, skipping")
@@ -629,16 +602,15 @@ class UssdAccessibilityService : AccessibilityService() {
                 operation.step++
                 return operation.amount
             }
+            
+            if (isAskingForRemarks(lowerMessage) && !operation.sentRemarks) {
+                Log.d(TAG, "Remarks prompt detected")
+                operation.sentRemarks = true
+                operation.step++
+                return operation.remarks
+            }
         }
-
-        // ── 6. PIN can also appear after a numbered confirmation flow
-        if (isAskingForPin(lowerMessage) && !operation.sentPin) {
-            Log.d(TAG, "PIN prompt detected (post-menu)")
-            operation.sentPin = true
-            operation.step++
-            return operation.upiPin
-        }
-
+        
         return null
     }
     
@@ -729,11 +701,7 @@ class UssdAccessibilityService : AccessibilityService() {
     private fun isAskingForRemarks(lowerMessage: String): Boolean {
         return lowerMessage.contains("remark") ||
                lowerMessage.contains("comment") ||
-               (lowerMessage.contains("note") && (
-                   lowerMessage.contains("enter") ||
-                   lowerMessage.contains("add") ||
-                   lowerMessage.contains("optional")
-               ))
+               lowerMessage.contains("note")
     }
     
     private fun findMenuOption(message: String, keywords: List<String>): String? {
@@ -812,8 +780,7 @@ class UssdAccessibilityService : AccessibilityService() {
             "debit card", "last 6",
             "ifsc",
             "incorrect", "invalid", "declined",
-            "beneficiary", "payment address",
-            "remark", "comment"
+            "beneficiary", "payment address"
         )
         
         for (indicator in ussdIndicators) {

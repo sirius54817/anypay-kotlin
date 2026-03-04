@@ -284,7 +284,7 @@ private fun ScannerOverlay() {
 }
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
-internal fun processImage(
+private fun processImage(
     imageProxy: ImageProxy,
     onResult: (UpiPaymentInfo?) -> Unit
 ) {
