@@ -3,8 +3,6 @@ package com.idk.anypay.service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.text.TextUtils
@@ -58,14 +56,7 @@ class UpiService(private val context: Context) {
     
     // Current pending transaction (for updating status later)
     private var pendingTransaction: Transaction? = null
-    
-    // Track when last USSD session ended to avoid carrier "Connection problem" errors
-    private var lastOperationEndTime: Long = 0L
-    private val handler = Handler(Looper.getMainLooper())
-    private companion object SessionCooldown {
-        // Minimum gap between USSD sessions to avoid carrier rejection
-        const val SESSION_COOLDOWN_MS = 3000L
-    }
+
 
     init {
         // Set up callbacks from accessibility service
