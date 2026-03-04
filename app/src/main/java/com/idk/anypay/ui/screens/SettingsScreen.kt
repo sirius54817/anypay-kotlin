@@ -221,7 +221,7 @@ fun SettingsScreen(
             SettingsItem(
                 icon     = Icons.Default.Info,
                 title    = "Version",
-                subtitle = "1.0.0"
+                subtitle = "1.1.0"
             )
             SettingsDivider()
             SettingsItem(
