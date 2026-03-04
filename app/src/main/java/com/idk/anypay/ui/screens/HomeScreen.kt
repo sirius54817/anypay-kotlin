@@ -47,6 +47,7 @@ fun HomeScreen(
     onCheckBalance: () -> Unit,
     onScanToPay: (UpiPaymentInfo) -> Unit,
     onSendMoney: () -> Unit,
+    onPayToContact: () -> Unit,
     onViewHistory: () -> Unit,
     hasCameraPermission: Boolean = false,
     onRequestCameraPermission: () -> Unit = {},
@@ -97,23 +98,35 @@ fun HomeScreen(
             )
         }
         item {
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    QuickActionCard(
+                        title = "Check Balance",
+                        icon = Icons.Default.AccountBalance,
+                        color = BalanceBlue,
+                        onClick = onCheckBalance,
+                        modifier = Modifier.weight(1f)
+                    )
+                    QuickActionCard(
+                        title = "Send to UPI",
+                        icon = Icons.Default.ArrowUpward,
+                        color = SendRed,
+                        onClick = onSendMoney,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 QuickActionCard(
-                    title = "Check Balance",
-                    icon = Icons.Default.AccountBalance,
-                    color = BalanceBlue,
-                    onClick = onCheckBalance,
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionCard(
-                    title = "Send Money",
-                    icon = Icons.Default.ArrowUpward,
-                    color = SendRed,
-                    onClick = onSendMoney,
-                    modifier = Modifier.weight(1f)
+                    title = "Pay to Contact",
+                    icon = Icons.Default.Contacts,
+                    color = ReceiveGreen,
+                    onClick = onPayToContact,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -751,6 +764,7 @@ private fun HomeScreenPreview() {
             onCheckBalance = {},
             onScanToPay = { _ -> },
             onSendMoney = {},
+            onPayToContact = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -772,6 +786,7 @@ private fun HomeScreenDarkPreview() {
             onCheckBalance = {},
             onScanToPay = { _ -> },
             onSendMoney = {},
+            onPayToContact = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -794,6 +809,7 @@ private fun HomeScreenPermissionMissingPreview() {
             onCheckBalance = {},
             onScanToPay = { _ -> },
             onSendMoney = {},
+            onPayToContact = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},
@@ -816,6 +832,7 @@ private fun HomeScreenRestrictedSettingsPreview() {
             onCheckBalance = {},
             onScanToPay = { _ -> },
             onSendMoney = {},
+            onPayToContact = {},
             onViewHistory = {},
             onRequestPermissions = {},
             onOpenAccessibilitySettings = {},

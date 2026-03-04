@@ -36,6 +36,12 @@ class MainActivity : FragmentActivity() {
         viewModel.updateCameraPermission(granted)
     }
     
+    private val contactsPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        viewModel.updateContactsPermission(granted)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -58,6 +64,9 @@ class MainActivity : FragmentActivity() {
                         onRequestCameraPermission = {
                             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                         },
+                        onRequestContactsPermission = {
+                            contactsPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                        },
                         onAuthenticate = {
                             viewModel.authenticateWithBiometric(this) { _, _ -> }
                         }
@@ -78,6 +87,7 @@ private fun AppContent(
     viewModel: AppViewModel,
     onRequestPhonePermissions: () -> Unit,
     onRequestCameraPermission: () -> Unit,
+    onRequestContactsPermission: () -> Unit,
     onAuthenticate: () -> Unit
 ) {
     val currentScreen by viewModel.currentScreen.collectAsStateWithLifecycle()
@@ -88,6 +98,7 @@ private fun AppContent(
     val lastUssdMessage by viewModel.lastUssdMessage.collectAsStateWithLifecycle()
     val hasPhonePermission by viewModel.hasPhonePermission.collectAsStateWithLifecycle()
     val hasCameraPermission by viewModel.hasCameraPermission.collectAsStateWithLifecycle()
+    val hasContactsPermission by viewModel.hasContactsPermission.collectAsStateWithLifecycle()
     val isAccessibilityEnabled by viewModel.isAccessibilityServiceEnabled.collectAsStateWithLifecycle()
     val totalSpent by viewModel.totalSpent.collectAsStateWithLifecycle()
     val averageTransaction by viewModel.averageTransaction.collectAsStateWithLifecycle()
@@ -125,6 +136,7 @@ private fun AppContent(
                 lastBalance = viewModel.getLastBalance(),
                 hasPhonePermission = hasPhonePermission,
                 hasCameraPermission = hasCameraPermission,
+                hasContactsPermission = hasContactsPermission,
                 isAccessibilityEnabled = isAccessibilityEnabled,
                 hasOverlayPermission = viewModel.hasOverlayPermission(),
                 totalSpent = totalSpent,
@@ -132,6 +144,9 @@ private fun AppContent(
                 categoryStats = categoryStats,
                 onSendMoney = { recipient, amount, remarks ->
                     viewModel.sendMoney(recipient, amount, remarks)
+                },
+                onSendMoneyToMobile = { mobileNumber, amount, remarks ->
+                    viewModel.sendMoneyToMobile(mobileNumber, amount, remarks)
                 },
                 onCheckBalance = {
                     viewModel.checkBalance()
@@ -150,6 +165,7 @@ private fun AppContent(
                 },
                 onRequestPhonePermissions = onRequestPhonePermissions,
                 onRequestCameraPermission = onRequestCameraPermission,
+                onRequestContactsPermission = onRequestContactsPermission,
                 onOpenAccessibilitySettings = {
                     viewModel.openAccessibilitySettings()
                 },

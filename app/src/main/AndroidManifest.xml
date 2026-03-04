@@ -12,6 +12,9 @@
     <!-- Camera for QR Scanning -->
     <uses-permission android:name="android.permission.CAMERA" />
     
+    <!-- Contacts for Pay to Contact -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <!-- Overlay Permission for hiding USSD dialogs -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     

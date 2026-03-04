@@ -97,6 +97,29 @@ User taps "Scan to Pay" on HomeScreen
 
 ---
 
+### 2.4 Pay to Contact → Send Money via Mobile Flow
+
+```
+User taps "Pay to Contact" on HomeScreen
+  → navigates to PayToContactScreen (route: "pay_to_contact")
+  → requests READ_CONTACTS permission if needed
+  → loads contacts with names, phone numbers, photos
+  → user searches and taps a contact
+  → navigates to SendToContactScreen (route: "send_to_contact")
+      pre-filled: phone number (last 10 digits), contact name as remarks
+  → user fills amount → taps Send
+  → MainNavigation calls: onSendMoneyToMobile(phone, amount, remarks)
+  → AppViewModel.sendMoneyToMobile(phone, amount, remarks)
+  → UpiService.sendMoneyToMobile(credentials, phone, amount, remarks)
+      Uses SEND_MONEY_MOBILE operation type (separate from SEND_MONEY)
+      Always selects "Mobile No" option in USSD menu
+  → Same USSD automation, overlay, completion as Send Money
+```
+
+**Key isolation**: SEND_MONEY_MOBILE is a completely separate operation
+type with its own handler (`handleSendMoneyMobile`). It cannot interfere
+with UPI ID, QR, or balance check flows.
+
 ## 3. USSD Accessibility Service — Timing & Delays (CRITICAL)
 
 These timing constants are **tuned for real-device USSD reliability**. Changing them breaks payments.
@@ -198,6 +221,8 @@ Step 2: Enter UPI PIN (when prompted)
 | `send_money`     | SendMoneyScreen      | uses pendingRecipient/Amount/Remarks    |
 | `check_balance`  | CheckBalanceScreen   | —                                       |
 | `qr_scanner`     | QrScannerScreen      | onScanResult → sets pending* → nav to send_money |
+| `pay_to_contact` | PayToContactScreen   | contact picker with search              |
+| `send_to_contact`| SendToContactScreen  | uses pendingContactPhone/Name           |
 
 ---
 
@@ -228,6 +253,7 @@ Step 2: Enter UPI PIN (when prompted)
 | `CALL_PHONE`            | Dial *99# USSD                 | phonePermissionLauncher         |
 | `READ_PHONE_STATE`      | USSD session management        | phonePermissionLauncher         |
 | `CAMERA`                | QR code scanning               | cameraPermissionLauncher        |
+| `READ_CONTACTS`         | Pay to Contact feature         | contactsPermissionLauncher      |
 | `SYSTEM_ALERT_WINDOW`   | Overlay to hide USSD dialogs   | Settings intent                 |
 | Accessibility Service   | Read/interact with USSD dialog | Accessibility Settings intent   |
 

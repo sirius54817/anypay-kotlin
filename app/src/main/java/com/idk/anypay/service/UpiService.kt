@@ -3,6 +3,8 @@ package com.idk.anypay.service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.text.TextUtils
@@ -57,6 +59,14 @@ class UpiService(private val context: Context) {
     // Current pending transaction (for updating status later)
     private var pendingTransaction: Transaction? = null
     
+    // Track when last USSD session ended to avoid carrier "Connection problem" errors
+    private var lastOperationEndTime: Long = 0L
+    private val handler = Handler(Looper.getMainLooper())
+    private companion object SessionCooldown {
+        // Minimum gap between USSD sessions to avoid carrier rejection
+        const val SESSION_COOLDOWN_MS = 3000L
+    }
+
     init {
         // Set up callbacks from accessibility service
         UssdAccessibilityService.onUssdResponse = { message ->
@@ -198,6 +208,47 @@ class UpiService(private val context: Context) {
         return transaction
     }
     
+    /**
+     * Send money to a mobile number using USSD *99#
+     * Uses a separate SEND_MONEY_MOBILE operation type so it cannot
+     * interfere with the UPI ID / QR payment flow.
+     */
+    fun sendMoneyToMobile(
+        credentials: UserCredentials,
+        mobileNumber: String,
+        amount: Double,
+        remarks: String = "payment"
+    ): Transaction {
+        Log.d(TAG, "Starting send money to MOBILE: $mobileNumber, amount=$amount")
+
+        val transaction = Transaction(
+            type = TransactionType.SEND,
+            amount = amount,
+            recipientVpa = mobileNumber,
+            status = TransactionStatus.PENDING,
+            message = remarks
+        )
+
+        pendingTransaction = transaction
+        _operationState.value = OperationState.InProgress("Initiating payment to $mobileNumber...")
+
+        UssdOverlayService.start(context, "Initiating payment to $mobileNumber...")
+
+        UssdAccessibilityService.startSendMoneyMobile(
+            bankIfsc = credentials.bankIfsc,
+            bankName = credentials.bankName,
+            cardDetails = credentials.formattedCardDetails,
+            upiPin = credentials.upiPin,
+            recipient = mobileNumber,
+            amount = amount.toLong().toString(),
+            remarks = remarks
+        )
+
+        dialUssdCode("*99#")
+
+        return transaction
+    }
+
     /**
      * Link bank account using USSD *99#
      */

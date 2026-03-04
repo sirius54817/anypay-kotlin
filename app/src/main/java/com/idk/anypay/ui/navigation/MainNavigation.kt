@@ -27,6 +27,8 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector?
     object SendMoney : Screen("send_money", "Send Money", null)
     object CheckBalance : Screen("check_balance", "Check Balance", null)
     object QrScanner : Screen("qr_scanner", "Scan QR", null)
+    object PayToContact : Screen("pay_to_contact", "Pay to Contact", null)
+    object SendToContact : Screen("send_to_contact", "Pay to Contact", null)
 }
 
 val bottomNavItems = listOf(Screen.Home, Screen.History, Screen.Settings)
@@ -42,12 +44,14 @@ fun MainNavigation(
     lastBalance: Double,
     hasPhonePermission: Boolean,
     hasCameraPermission: Boolean,
+    hasContactsPermission: Boolean = false,
     isAccessibilityEnabled: Boolean,
     hasOverlayPermission: Boolean = true,
     totalSpent: Double,
     averageTransaction: Double,
     categoryStats: Map<PaymentCategory, Pair<Int, Double>>,
     onSendMoney: (String, Double, String) -> Unit,
+    onSendMoneyToMobile: (String, Double, String) -> Unit = onSendMoney,
     onCheckBalance: () -> Unit,
     onCancelOperation: () -> Unit,
     onResetOperation: () -> Unit,
@@ -55,6 +59,7 @@ fun MainNavigation(
     onClearData: () -> Unit,
     onRequestPhonePermissions: () -> Unit,
     onRequestCameraPermission: () -> Unit,
+    onRequestContactsPermission: () -> Unit = {},
     onOpenAccessibilitySettings: () -> Unit,
     onOpenAppInfo: () -> Unit = {},
     requiresRestrictedSettings: Boolean = false,
@@ -71,7 +76,9 @@ fun MainNavigation(
     var pendingRecipient by remember { mutableStateOf("") }
     var pendingAmount by remember { mutableStateOf("") }
     var pendingRemarks by remember { mutableStateOf("") }
-    
+    var pendingContactPhone by remember { mutableStateOf("") }
+    var pendingContactName by remember { mutableStateOf("") }
+
     Scaffold(
         topBar = {
             if (showBottomBar) {
@@ -144,6 +151,9 @@ fun MainNavigation(
                         pendingAmount = ""
                         pendingRemarks = ""
                         navController.navigate(Screen.SendMoney.route)
+                    },
+                    onPayToContact = {
+                        navController.navigate(Screen.PayToContact.route)
                     },
                     onScanToPay = { paymentInfo ->
                         pendingRecipient = paymentInfo.upiId
@@ -245,6 +255,54 @@ fun MainNavigation(
                         }
                     },
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.PayToContact.route) {
+                PayToContactScreen(
+                    hasContactsPermission = hasContactsPermission,
+                    onRequestContactsPermission = onRequestContactsPermission,
+                    onContactSelected = { phone, name ->
+                        pendingContactPhone = phone
+                        pendingContactName  = name
+                        navController.navigate(Screen.SendToContact.route) {
+                            popUpTo(Screen.PayToContact.route) { inclusive = true }
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.SendToContact.route) {
+                SendToContactScreen(
+                    operationState  = operationState,
+                    lastUssdMessage = lastUssdMessage,
+                    initialRecipient = pendingContactPhone,
+                    initialName      = pendingContactName,
+                    onUpdateTransaction = { transaction ->
+                        onUpdateTransaction(transaction)
+                    },
+                    onSendMoney = { recipient, amount, remarks ->
+                        if (hasPhonePermission && isAccessibilityEnabled) {
+                            onSendMoneyToMobile(recipient, amount, remarks)
+                        } else if (!hasPhonePermission) {
+                            onRequestPhonePermissions()
+                        } else {
+                            onOpenAccessibilitySettings()
+                        }
+                    },
+                    onSendMoneyUpi = { recipient, amount, remarks ->
+                        if (hasPhonePermission && isAccessibilityEnabled) {
+                            onSendMoney(recipient, amount, remarks)
+                        } else if (!hasPhonePermission) {
+                            onRequestPhonePermissions()
+                        } else {
+                            onOpenAccessibilitySettings()
+                        }
+                    },
+                    onCancel = onCancelOperation,
+                    onBack   = { navController.popBackStack() },
+                    onReset  = onResetOperation
                 )
             }
         }

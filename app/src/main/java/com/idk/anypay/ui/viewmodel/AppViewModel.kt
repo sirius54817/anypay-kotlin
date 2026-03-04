@@ -67,6 +67,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _hasCameraPermission = MutableStateFlow(false)
     val hasCameraPermission: StateFlow<Boolean> = _hasCameraPermission.asStateFlow()
     
+    private val _hasContactsPermission = MutableStateFlow(false)
+    val hasContactsPermission: StateFlow<Boolean> = _hasContactsPermission.asStateFlow()
+
     private val _isAccessibilityServiceEnabled = MutableStateFlow(false)
     val isAccessibilityServiceEnabled: StateFlow<Boolean> = _isAccessibilityServiceEnabled.asStateFlow()
     
@@ -220,6 +223,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    fun sendMoneyToMobile(mobileNumber: String, amount: Double, remarks: String = "payment") {
+        val creds = credentials.value ?: return
+        val transaction = upiService.sendMoneyToMobile(creds, mobileNumber, amount, remarks)
+        viewModelScope.launch {
+            storageRepository.saveTransaction(transaction)
+        }
+    }
+
     fun cancelOperation() {
         upiService.cancelOperation()
     }
@@ -251,6 +262,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             context, Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
         
+        _hasContactsPermission.value = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
+
         _isAccessibilityServiceEnabled.value = upiService.isAccessibilityServiceEnabled()
     }
     
@@ -262,6 +277,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _hasCameraPermission.value = granted
     }
     
+    fun updateContactsPermission(granted: Boolean) {
+        _hasContactsPermission.value = granted
+    }
+
     fun openAccessibilitySettings() {
         upiService.openAccessibilitySettings()
     }

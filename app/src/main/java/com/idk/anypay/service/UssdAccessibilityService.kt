@@ -108,6 +108,29 @@ class UssdAccessibilityService : AccessibilityService() {
             resetState()
         }
         
+        fun startSendMoneyMobile(
+            bankIfsc: String,
+            bankName: String,
+            cardDetails: String,
+            upiPin: String,
+            recipient: String,
+            amount: String,
+            remarks: String
+        ) {
+            Log.d(TAG, "Starting SEND_MONEY_MOBILE to $recipient amount $amount")
+            currentOperation = UssdOperation(
+                type = OperationType.SEND_MONEY_MOBILE,
+                bankIfsc = bankIfsc,
+                bankName = bankName,
+                cardDetails = cardDetails,
+                upiPin = upiPin,
+                recipient = recipient,
+                amount = amount,
+                remarks = remarks
+            )
+            resetState()
+        }
+
         fun startLinkBank(bankIfsc: String, bankName: String, cardDetails: String) {
             Log.d(TAG, "Starting LINK_BANK operation for $bankName")
             currentOperation = UssdOperation(
@@ -440,6 +463,7 @@ class UssdAccessibilityService : AccessibilityService() {
         return when (operation.type) {
             OperationType.CHECK_BALANCE -> handleCheckBalance(operation, message, lowerMessage, hasNumberedOptions)
             OperationType.SEND_MONEY -> handleSendMoney(operation, message, lowerMessage, hasNumberedOptions)
+            OperationType.SEND_MONEY_MOBILE -> handleSendMoneyMobile(operation, message, lowerMessage, hasNumberedOptions)
             OperationType.LINK_BANK -> handleLinkBank(operation, message, lowerMessage, hasNumberedOptions)
         }
     }
@@ -447,9 +471,13 @@ class UssdAccessibilityService : AccessibilityService() {
     private fun isErrorMessage(lowerMessage: String): Boolean {
         return lowerMessage.contains("incorrect") ||
                lowerMessage.contains("invalid") ||
+               lowerMessage.contains("not a valid") ||
+               lowerMessage.contains("not valid") ||
                lowerMessage.contains("failed") ||
                lowerMessage.contains("declined") ||
                lowerMessage.contains("not registered") ||
+               lowerMessage.contains("not debited") ||
+               lowerMessage.contains("exceeded") ||
                lowerMessage.contains("connection problem") ||
                lowerMessage.contains("try again") ||
                lowerMessage.contains("unable to") ||
@@ -558,17 +586,23 @@ class UssdAccessibilityService : AccessibilityService() {
             }
             
             if (operation.selectedMenuOption && !operation.selectedPaymentMethod) {
-                if (lowerMessage.contains("send money to") || 
+                // Payment method menu — detected by presence of mobile/upi options
+                val hasMethodOptions = lowerMessage.contains("send money to") ||
                     lowerMessage.contains("mobile no") ||
-                    lowerMessage.contains("upi id")) {
-                    
+                    lowerMessage.contains("mobile number") ||
+                    lowerMessage.contains("upi id") ||
+                    lowerMessage.contains("vpa") ||
+                    lowerMessage.contains("mmid") ||
+                    (lowerMessage.contains("mobile") && lowerMessage.contains("upi"))
+
+                if (hasMethodOptions) {
                     val isUpiId = operation.recipient.contains("@")
                     val isMobileNumber = operation.recipient.matches(Regex("^\\d{10}$"))
                     Log.d(TAG, "Recipient type: isUpiId=$isUpiId, isMobile=$isMobileNumber")
                     
                     val option = when {
-                        isUpiId -> findMenuOption(message, listOf("upi id", "vpa")) ?: "3"
-                        isMobileNumber -> findMenuOption(message, listOf("mobile no", "mobile number")) ?: "1"
+                        isMobileNumber -> findMenuOption(message, listOf("mobile no", "mobile number", "mobile")) ?: "1"
+                        isUpiId -> findMenuOption(message, listOf("upi id", "vpa", "upi")) ?: "2"
                         else -> "1"
                     }
                     
@@ -627,7 +661,109 @@ class UssdAccessibilityService : AccessibilityService() {
         
         return null
     }
-    
+
+    /**
+     * Handle SEND_MONEY_MOBILE — selects "Mobile No." payment method (option 1).
+     * The *99# Mobile No. path flow is:
+     *   Menu → Send Money → 1. Mobile No. → Enter Mobile No. → Enter MMID (if asked) → Amount → Remarks → PIN
+     * If MMID is requested, we send "1" to skip/default.
+     */
+    private fun handleSendMoneyMobile(
+        operation: UssdOperation,
+        message: String,
+        lowerMessage: String,
+        hasNumberedOptions: Boolean
+    ): String? {
+        // ── Remarks (check first — can appear with numbered options for skip)
+        if (isAskingForRemarks(lowerMessage) && !operation.sentRemarks) {
+            Log.d(TAG, "[Mobile] Remarks prompt detected")
+            operation.sentRemarks = true
+            operation.step++
+            if (hasNumberedOptions) {
+                val skipOption = findMenuOption(message, listOf("skip", "no remark", "none"))
+                return skipOption ?: "1"
+            }
+            return if (operation.remarks.isBlank()) "1" else operation.remarks
+        }
+
+        // ── MMID prompt — send "1" to skip/default
+        if (!hasNumberedOptions && !operation.sentRecipient &&
+            (lowerMessage.contains("mmid") || lowerMessage.contains("money identifier"))) {
+            Log.d(TAG, "[Mobile] MMID prompt detected — skipping with 1")
+            return "1"
+        }
+
+        if (hasNumberedOptions) {
+            // Step 1: select "Send Money" from main menu
+            if (!operation.selectedMenuOption) {
+                val sendOption = findMenuOption(message, listOf("send money", "transfer", "pay"))
+                if (sendOption != null) {
+                    Log.d(TAG, "[Mobile] Selecting send option: $sendOption")
+                    operation.selectedMenuOption = true
+                    operation.step++
+                    return sendOption
+                }
+            }
+            // Step 2: select "Mobile No." from payment method menu
+            if (operation.selectedMenuOption && !operation.selectedPaymentMethod) {
+                val hasMethodOptions = lowerMessage.contains("mobile") ||
+                    lowerMessage.contains("upi") ||
+                    lowerMessage.contains("mmid") ||
+                    lowerMessage.contains("send money to")
+                if (hasMethodOptions) {
+                    val option = findMenuOption(message, listOf("mobile no", "mobile number", "mobile")) ?: "1"
+                    Log.d(TAG, "[Mobile] Selecting Mobile No option: $option")
+                    operation.selectedPaymentMethod = true
+                    operation.step++
+                    return option
+                }
+            }
+        }
+
+        if (!hasNumberedOptions) {
+            if (isAskingForPin(lowerMessage) && !operation.sentPin) {
+                Log.d(TAG, "[Mobile] PIN prompt detected")
+                operation.sentPin = true
+                operation.step++
+                return operation.upiPin
+            }
+            if (isAskingForBank(lowerMessage) && !operation.sentBank) {
+                Log.d(TAG, "[Mobile] Bank prompt detected")
+                operation.sentBank = true
+                operation.step++
+                return operation.bankInput
+            }
+            if (isAskingForCard(lowerMessage) && !operation.sentCard) {
+                Log.d(TAG, "[Mobile] Card prompt detected")
+                operation.sentCard = true
+                operation.step++
+                return operation.cardDetails
+            }
+            if (isAskingForRecipient(lowerMessage) && !operation.sentRecipient) {
+                if (message.contains(operation.recipient)) {
+                    Log.d(TAG, "[Mobile] Recipient already echoed, skipping")
+                    return null
+                }
+                Log.d(TAG, "[Mobile] Recipient prompt detected, sending: ${operation.recipient}")
+                operation.sentRecipient = true
+                operation.step++
+                return operation.recipient
+            }
+            if (isAskingForAmount(lowerMessage) && !operation.sentAmount) {
+                if (message.contains(operation.amount)) {
+                    Log.d(TAG, "[Mobile] Amount already echoed, skipping")
+                    return null
+                }
+                Log.d(TAG, "[Mobile] Amount prompt detected")
+                operation.sentAmount = true
+                operation.step++
+                return operation.amount
+            }
+        }
+
+        return null
+    }
+
     private fun handleLinkBank(
         operation: UssdOperation,
         message: String,
@@ -767,7 +903,24 @@ class UssdAccessibilityService : AccessibilityService() {
         if (Regex("^\\+?\\d{2}\\s?\\d{4,5}\\s?\\d{4,5}$").matches(msg.trim())) {
             return true
         }
-        
+
+        // Phone call / dialer screen keywords
+        if (lowerMsg == "decline" || lowerMsg == "answer" ||
+            lowerMsg == "incoming call" || lowerMsg == "outgoing call" ||
+            lowerMsg == "dialing" || lowerMsg == "ringing" ||
+            lowerMsg == "on hold" || lowerMsg == "calling" ||
+            lowerMsg == "speaker" || lowerMsg == "mute" ||
+            lowerMsg == "keypad" || lowerMsg == "add call" ||
+            lowerMsg == "bluetooth" || lowerMsg == "end call" ||
+            lowerMsg == "message") {
+            return true
+        }
+
+        // Formatted phone numbers with country code like "+91 63001 63108"
+        if (Regex("^\\+?\\d{1,3}[\\s‪‬-]?\\d{4,5}[\\s‪‬-]?\\d{4,5}[‬]?$").matches(msg.trim())) {
+            return true
+        }
+
         if (msg.length < 5 && !Regex("^\\d+\\.").matches(msg)) {
             val genericWords = setOf("call", "chat", "video", "info", "back", "next", "done")
             if (lowerMsg in genericWords) return true
@@ -779,6 +932,18 @@ class UssdAccessibilityService : AccessibilityService() {
     private fun isLikelyUssdContent(message: String): Boolean {
         val lowerMessage = message.lowercase()
         
+        // Reject phone call / dialer screens
+        if (lowerMessage.contains("decline") && lowerMessage.contains("answer")) return false
+        if (lowerMessage.contains("dialing") || lowerMessage.contains("incoming call")) return false
+        if (lowerMessage.contains("00:0") && !lowerMessage.contains("*99")) return false
+        // Contact card pattern: name + "mobile +91..." without any USSD menu numbers
+        if (lowerMessage.contains("mobile ‪+") || lowerMessage.contains("mobile +91")) {
+            if (!lowerMessage.contains("1.") && !lowerMessage.contains("select") &&
+                !lowerMessage.contains("enter") && !lowerMessage.contains("carrier info")) {
+                return false
+            }
+        }
+
         val ussdIndicators = listOf(
             "1.", "2.", "3.",
             "select option",
@@ -795,7 +960,14 @@ class UssdAccessibilityService : AccessibilityService() {
             "ifsc",
             "incorrect", "invalid", "declined",
             "beneficiary", "payment address",
-            "remark", "comment"
+            "remark", "comment",
+            // ── Carrier result / error messages ──
+            "debited", "credited",
+            "exceeded", "limit",
+            "not a valid",
+            "transaction", "txn",
+            "money was", "payment failed",
+            "try after", "try again"
         )
         
         for (indicator in ussdIndicators) {
@@ -872,6 +1044,7 @@ class UssdAccessibilityService : AccessibilityService() {
 enum class OperationType {
     CHECK_BALANCE,
     SEND_MONEY,
+    SEND_MONEY_MOBILE,
     LINK_BANK
 }
 
