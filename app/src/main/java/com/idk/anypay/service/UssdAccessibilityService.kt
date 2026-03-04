@@ -525,6 +525,27 @@ class UssdAccessibilityService : AccessibilityService() {
         lowerMessage: String,
         hasNumberedOptions: Boolean
     ): String? {
+        // ── Remarks — check FIRST, before numbered-option branching.
+        //    Many carriers show remarks as a numbered menu ("1. Skip")
+        //    which makes hasNumberedOptions=true and skips the old check.
+        if (isAskingForRemarks(lowerMessage) && !operation.sentRemarks) {
+            Log.d(TAG, "Remarks prompt detected")
+            operation.sentRemarks = true
+            operation.step++
+            // If there's a "skip" option in a numbered menu, select it
+            if (hasNumberedOptions) {
+                val skipOption = findMenuOption(message, listOf("skip", "no remark", "none"))
+                if (skipOption != null) {
+                    Log.d(TAG, "Selecting skip remarks option: $skipOption")
+                    return skipOption
+                }
+                // Default: send "1" to skip when it's a numbered remarks prompt
+                return "1"
+            }
+            // Free-text remarks field — send the remarks or "1" to skip
+            return if (operation.remarks.isBlank()) "1" else operation.remarks
+        }
+
         if (hasNumberedOptions) {
             if (!operation.selectedMenuOption) {
                 val sendOption = findMenuOption(message, listOf("send money", "transfer", "pay"))
@@ -601,13 +622,6 @@ class UssdAccessibilityService : AccessibilityService() {
                 operation.sentAmount = true
                 operation.step++
                 return operation.amount
-            }
-            
-            if (isAskingForRemarks(lowerMessage) && !operation.sentRemarks) {
-                Log.d(TAG, "Remarks prompt detected")
-                operation.sentRemarks = true
-                operation.step++
-                return operation.remarks
             }
         }
         
@@ -780,7 +794,8 @@ class UssdAccessibilityService : AccessibilityService() {
             "debit card", "last 6",
             "ifsc",
             "incorrect", "invalid", "declined",
-            "beneficiary", "payment address"
+            "beneficiary", "payment address",
+            "remark", "comment"
         )
         
         for (indicator in ussdIndicators) {

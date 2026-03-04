@@ -1,11 +1,16 @@
 package com.idk.anypay.ui.screens
 
+import android.util.Log
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,10 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import com.idk.anypay.data.model.*
 import com.idk.anypay.ui.theme.*
+import java.util.concurrent.Executors
 
 // ─── Home Screen ─────────────────────────────────────────────────────────────
 
@@ -32,9 +45,11 @@ fun HomeScreen(
     hasOverlayPermission: Boolean = true,
     requiresRestrictedSettings: Boolean = false,
     onCheckBalance: () -> Unit,
-    onScanToPay: () -> Unit,
+    onScanToPay: (UpiPaymentInfo) -> Unit,
     onSendMoney: () -> Unit,
     onViewHistory: () -> Unit,
+    hasCameraPermission: Boolean = false,
+    onRequestCameraPermission: () -> Unit = {},
     onRequestPermissions: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
     onOpenAppInfo: () -> Unit = {},
@@ -63,6 +78,15 @@ fun HomeScreen(
             }
         }
 
+        // ── Live QR Scanner ───────────────────────────────────────────────
+        item {
+            EmbeddedQrScanner(
+                hasCameraPermission = hasCameraPermission,
+                onRequestCameraPermission = onRequestCameraPermission,
+                onScanResult = onScanToPay
+            )
+        }
+
         // ── Quick actions ─────────────────────────────────────────────────
         item {
             Text(
@@ -73,32 +97,23 @@ fun HomeScreen(
             )
         }
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    QuickActionCard(
-                        title = "Check Balance",
-                        icon = Icons.Default.AccountBalance,
-                        color = BalanceBlue,
-                        onClick = onCheckBalance,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionCard(
-                        title = "Send Money",
-                        icon = Icons.Default.ArrowUpward,
-                        color = SendRed,
-                        onClick = onSendMoney,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 QuickActionCard(
-                    title = "Scan to Pay",
-                    icon = Icons.Default.QrCodeScanner,
-                    color = ReceiveGreen,
-                    onClick = onScanToPay,
-                    modifier = Modifier.fillMaxWidth()
+                    title = "Check Balance",
+                    icon = Icons.Default.AccountBalance,
+                    color = BalanceBlue,
+                    onClick = onCheckBalance,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionCard(
+                    title = "Send Money",
+                    icon = Icons.Default.ArrowUpward,
+                    color = SendRed,
+                    onClick = onSendMoney,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -534,6 +549,170 @@ fun TransactionItem(
     }
 }
 
+// ─── Embedded QR Scanner (live camera in HomeScreen) ──────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EmbeddedQrScanner(
+    hasCameraPermission: Boolean,
+    onRequestCameraPermission: () -> Unit,
+    onScanResult: (UpiPaymentInfo) -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var scannedOnce by remember { mutableStateOf(false) }
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    DisposableEffect(Unit) { onDispose { cameraExecutor.shutdown() } }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                MaterialTheme.shapes.medium
+            )
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (!hasCameraPermission) {
+            // ── Ask for camera permission ───────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    Icons.Default.QrCodeScanner,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+                Text(
+                    text = "Scan QR to Pay",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Allow camera access to scan UPI QR codes",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedButton(onClick = onRequestCameraPermission) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Enable Camera", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        } else {
+            // ── Live camera preview ────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .clip(MaterialTheme.shapes.medium)
+            ) {
+                AndroidView(
+                    factory = { ctx ->
+                        val previewView = PreviewView(ctx).apply {
+                            scaleType = PreviewView.ScaleType.FILL_CENTER
+                        }
+                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                        cameraProviderFuture.addListener({
+                            try {
+                                val cameraProvider = cameraProviderFuture.get()
+                                val preview = androidx.camera.core.Preview.Builder().build().also {
+                                    it.setSurfaceProvider(previewView.surfaceProvider)
+                                }
+                                val imageAnalysis = ImageAnalysis.Builder()
+                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                    .build()
+                                    .also { analysis ->
+                                        analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                                            if (!scannedOnce) {
+                                                processImageForHome(imageProxy) { result ->
+                                                    if (result != null && !scannedOnce) {
+                                                        scannedOnce = true
+                                                        onScanResult(result)
+                                                    }
+                                                }
+                                            } else {
+                                                imageProxy.close()
+                                            }
+                                        }
+                                    }
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    CameraSelector.DEFAULT_BACK_CAMERA,
+                                    preview,
+                                    imageAnalysis
+                                )
+                            } catch (e: Exception) {
+                                Log.e("HomeQR", "Camera init failed", e)
+                            }
+                        }, ContextCompat.getMainExecutor(ctx))
+                        previewView
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+                // Subtle label overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Point at a UPI QR code",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
+private fun processImageForHome(
+    imageProxy: ImageProxy,
+    onResult: (UpiPaymentInfo?) -> Unit
+) {
+    val mediaImage = imageProxy.image
+    if (mediaImage != null) {
+        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        val scanner = BarcodeScanning.getClient()
+        scanner.process(image)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    if (barcode.valueType == Barcode.TYPE_TEXT) {
+                        val rawValue = barcode.rawValue ?: continue
+                        if (rawValue.startsWith("upi://pay")) {
+                            val paymentInfo = UpiPaymentInfo.parse(rawValue)
+                            if (paymentInfo != null) {
+                                onResult(paymentInfo)
+                                imageProxy.close()
+                                return@addOnSuccessListener
+                            }
+                        }
+                    }
+                }
+                onResult(null)
+            }
+            .addOnFailureListener { onResult(null) }
+            .addOnCompleteListener { imageProxy.close() }
+    } else {
+        imageProxy.close()
+        onResult(null)
+    }
+}
+
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
 private val sampleTransactions = listOf(
@@ -570,7 +749,7 @@ private fun HomeScreenPreview() {
             isAccessibilityEnabled = true,
             hasOverlayPermission = true,
             onCheckBalance = {},
-            onScanToPay = {},
+            onScanToPay = { _ -> },
             onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},
@@ -591,7 +770,7 @@ private fun HomeScreenDarkPreview() {
             isAccessibilityEnabled = true,
             hasOverlayPermission = true,
             onCheckBalance = {},
-            onScanToPay = {},
+            onScanToPay = { _ -> },
             onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},
@@ -613,7 +792,7 @@ private fun HomeScreenPermissionMissingPreview() {
             hasOverlayPermission = false,
             requiresRestrictedSettings = false,
             onCheckBalance = {},
-            onScanToPay = {},
+            onScanToPay = { _ -> },
             onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},
@@ -635,7 +814,7 @@ private fun HomeScreenRestrictedSettingsPreview() {
             hasOverlayPermission = true,
             requiresRestrictedSettings = true,
             onCheckBalance = {},
-            onScanToPay = {},
+            onScanToPay = { _ -> },
             onSendMoney = {},
             onViewHistory = {},
             onRequestPermissions = {},

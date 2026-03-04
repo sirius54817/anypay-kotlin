@@ -92,6 +92,33 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     
     init {
         determineInitialScreen()
+        // Automatically update transactions when USSD operation completes —
+        // this fires regardless of which screen is visible.
+        viewModelScope.launch {
+            upiService.operationState.collect { state ->
+                when (state) {
+                    is UpiService.OperationState.Success -> {
+                        state.transaction?.let { tx ->
+                            storageRepository.updateTransaction(tx)
+                            if (tx.type == TransactionType.BALANCE_CHECK && tx.balance != null) {
+                                storageRepository.saveLastBalance(tx.balance)
+                            }
+                        }
+                    }
+                    is UpiService.OperationState.Error -> {
+                        // Mark the most recent PENDING transaction as FAILED
+                        val pendingTx = storageRepository.transactions.value
+                            .firstOrNull { it.status == TransactionStatus.PENDING }
+                        pendingTx?.let {
+                            storageRepository.updateTransaction(
+                                it.copy(status = TransactionStatus.FAILED, message = state.message)
+                            )
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
     }
     
     private fun determineInitialScreen() {
